@@ -22,7 +22,7 @@ const router = createBrowserRouter([
       { path: 'propiedad/:id', element: <Detail/> },
       { path: 'emprendimientos', element: <Emprendimientos/> },
       { path: 'tasaciones', element: <Tasaciones/> },
-      { path: 'empresa', element: <Empresa/> },
+     { path: 'empresa', element: <Empresa/> },
       { path: 'contacto', element: <Contacto/> },
       { path: 'admin', element: <Admin/> },
       { path: 'login', element: <Login/> },
