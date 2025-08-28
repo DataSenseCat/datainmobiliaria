@@ -14,3 +14,44 @@
 /* chips/badges */
 .badge { @apply inline-flex items-center gap-2 text-xs md:text-sm bg-white/15 rounded-full px-3 py-1; }
 .badge-inv { @apply inline-flex items-center gap-2 text-xs bg-white text-brand-600 rounded-full px-2 py-0.5 font-semibold; }
+
+/* === Estilos base para formularios (bordes/líneas) === */
+@layer base {
+  /* inputs comunes */
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="search"],
+  input[type="url"],
+  select,
+  textarea {
+    @apply w-full bg-white text-gray-800 placeholder-gray-400
+           border border-gray-300 rounded-xl
+           px-3 py-2 outline-none ring-0
+           transition-colors duration-150;
+  }
+  /* foco consistente */
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  input[type="tel"]:focus,
+  input[type="number"]:focus,
+  input[type="search"]:focus,
+  input[type="url"]:focus,
+  select:focus,
+  textarea:focus {
+    @apply border-brand-500 ring-2 ring-brand-500;
+  }
+  /* deshabilitados */
+  input:disabled,
+  select:disabled,
+  textarea:disabled {
+    @apply bg-gray-50 text-gray-500 cursor-not-allowed;
+  }
+}
+
+/* (Opcional) variante subrayada si alguna vez querés “línea inferior” en vez de borde completo */
+.input-underline { @apply w-full bg-transparent border-0 border-b border-gray-300 rounded-none px-0 py-2; }
+.input-underline:focus { @apply border-brand-500 ring-0; }
+/* en src/styles/index.css */
+.nav-link { @apply whitespace-nowrap; }
