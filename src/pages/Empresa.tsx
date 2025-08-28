@@ -1,4 +1,13 @@
 // src/pages/Empresa.tsx
+import { useEffect } from 'react';
+
+export default function Empresa() {
+  useEffect(() => {
+    console.log('EMPRESA >> este archivo se está renderizando');
+  }, []);
+  // ...
+}
+
 import {
   Trophy, ShieldCheck, Sparkles, Building2, Home, Users2, Hammer, Scale, CheckCircle2,
   Quote, Star, BriefcaseBusiness, ClipboardList
@@ -217,14 +226,6 @@ function Cert({ label }:{label:string}) {
       {label}
     </div>
   )
-}
-import { useEffect } from 'react';
-
-export default function Empresa() {
-  useEffect(() => {
-    console.log('EMPRESA >> este archivo se está renderizando');
-  }, []);
-  // ...
 }
 
 
