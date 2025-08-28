@@ -1,48 +1,56 @@
 import {
-  Building2, Home, Users2, Hammer, Scale, ShieldCheck, Globe2,
-  Sparkles, CheckCircle2, Trophy, Star, Phone, Mail, MapPin
+  Trophy, ShieldCheck, Sparkles, Building2, Home, Users2, Hammer, Scale, CheckCircle2,
+  Quote, Star, Mail, Phone, MapPin
 } from 'lucide-react'
 import { SITE } from '../shared/SiteConfig'
 
 export default function Empresa() {
   return (
     <div className="w-full">
-      {/* HERO azul con pill y badges */}
+      {/* ========= HERO AZUL CENTRADO (como inmobiliaria1) ========= */}
       <section className="bg-brand-600 text-white">
-        <div className="container py-12">
+        <div className="container py-12 text-center">
+          {/* pill */}
           <div className="inline-flex items-center gap-2 text-xs md:text-sm bg-white/15 rounded-full px-3 py-1 mb-3">
             <span className="bg-white text-brand-600 px-2 py-0.5 rounded-full font-semibold">Desde 2008</span>
             <span className="opacity-90">más de 15 años de experiencia</span>
           </div>
 
           <h1 className="text-3xl md:text-4xl font-bold">Inmobiliaria Catamarca</h1>
-          <p className="opacity-90 mt-2 max-w-3xl">
+          <p className="opacity-90 mt-2 max-w-3xl mx-auto">
             Líderes en el mercado inmobiliario catamarqueño: experiencia, cercanía y resultados para conectar personas con su próximo hogar o inversión.
           </p>
 
-          <div className="mt-6 grid md:grid-cols-3 gap-3">
+          {/* badges */}
+          <div className="mt-6 grid md:grid-cols-3 gap-3 max-w-4xl mx-auto">
             <HeroBadge icon={<Trophy className="w-5 h-5" />} title="2,500+ operaciones" desc="ventas y alquileres concretados" />
             <HeroBadge icon={<ShieldCheck className="w-5 h-5" />} title="98% satisfacción" desc="de nuestros clientes" />
             <HeroBadge icon={<Sparkles className="w-5 h-5" />} title="Equipo profesional" desc="tasadores y agentes certificados" />
           </div>
+
+          <div className="mt-6 flex items-center justify-center gap-3">
+            <a href="/contacto" className="btn bg-white text-brand-700 hover:bg-white/90">Contactar Ahora</a>
+            <a href={`mailto:${SITE.email}`} className="btn btn-outline border-white text-white hover:bg-white/10">Escribir</a>
+          </div>
         </div>
       </section>
 
-      {/* Misión / Visión / Valores */}
+      {/* ========= Misión / Visión / Valores (cards con hover) ========= */}
       <section className="container -mt-6 relative z-10 grid md:grid-cols-3 gap-6">
-        <InfoCard title="Nuestra Misión" icon={<Globe2 className="w-5 h-5 text-brand-700" />}>
+        <InfoCard title="Nuestra Misión" icon={<Sparkles className="w-5 h-5 text-brand-700" />}>
           Ser el puente que conecta a las personas con sus sueños inmobiliarios, brindando un servicio integral y transparente.
         </InfoCard>
-        <InfoCard title="Nuestra Visión" icon={<Sparkles className="w-5 h-5 text-brand-700" />}>
-          Ser reconocidos como la inmobiliaria líder en Catamarca, expandiendo nuestros servicios con innovación y excelencia.
+        <InfoCard title="Nuestra Visión" icon={<ShieldCheck className="w-5 h-5 text-brand-700" />}>
+          Ser la inmobiliaria líder en Catamarca, expandiendo servicios con innovación y excelencia.
         </InfoCard>
-        <InfoCard title="Nuestros Valores" icon={<ShieldCheck className="w-5 h-5 text-brand-700" />}>
-          Transparencia, compromiso, cercanía, ética profesional y resultados.
+        <InfoCard title="Nuestros Valores" icon={<Trophy className="w-5 h-5 text-brand-700" />}>
+          Transparencia, compromiso, cercanía, ética profesional y foco en resultados.
         </InfoCard>
       </section>
 
-      {/* Stats + Servicios */}
+      {/* ========= Estadísticas + Servicios ========= */}
       <section className="container py-10">
+        {/* stats */}
         <div className="grid md:grid-cols-4 gap-4 mb-8">
           <Stat number="15+" label="Años de experiencia" />
           <Stat number="2,500+" label="Propiedades vendidas" />
@@ -50,6 +58,7 @@ export default function Empresa() {
           <Stat number="98%" label="Satisfacción" />
         </div>
 
+        {/* servicios */}
         <h3 className="text-xl font-semibold mb-4">Nuestros Servicios</h3>
         <div className="grid md:grid-cols-3 gap-4">
           <ServiceCard icon={<Home className="w-5 h-5" />} title="Venta de Propiedades"
@@ -67,7 +76,7 @@ export default function Empresa() {
         </div>
       </section>
 
-      {/* Equipo */}
+      {/* ========= Equipo ========= */}
       <section className="container pb-10">
         <h3 className="text-xl font-semibold mb-4">Nuestro Equipo</h3>
         <div className="grid md:grid-cols-4 gap-4">
@@ -78,17 +87,23 @@ export default function Empresa() {
         </div>
       </section>
 
-      {/* Testimonios */}
+      {/* ========= Testimonios ========= */}
       <section className="container pb-10">
         <h3 className="text-xl font-semibold mb-4">Lo que dicen nuestros clientes</h3>
         <div className="grid md:grid-cols-3 gap-4">
-          <Testimonial text="Vendieron mi casa en tiempo récord y al precio acordado. Muy profesionales." author="Juan Pérez" role="Barrio Norte" />
-          <Testimonial text="Me ayudaron a encontrar la inversión perfecta. Atención personalizada." author="Laura Martínez" role="Centro" />
-          <Testimonial text="Excelentes, me acompañaron en cada paso de la compra." author="Miguel Sánchez" role="Villa Cubas" />
+          <Testimonial
+            text="Vendieron mi casa en tiempo récord y al precio acordado. Muy profesionales."
+            author="Juan Pérez" role="Barrio Norte" />
+          <Testimonial
+            text="Me ayudaron a encontrar la inversión perfecta. Atención personalizada."
+            author="Laura Martínez" role="Centro" />
+          <Testimonial
+            text="Excelentes, me acompañaron en cada paso de la compra."
+            author="Miguel Sánchez" role="Villa Cubas" />
         </div>
       </section>
 
-      {/* Certificaciones */}
+      {/* ========= Certificaciones ========= */}
       <section className="container pb-12">
         <h3 className="text-xl font-semibold mb-4">Certificaciones y Membresías</h3>
         <div className="grid md:grid-cols-4 gap-4">
@@ -99,17 +114,17 @@ export default function Empresa() {
         </div>
       </section>
 
-      {/* CTA final */}
-      <section className="bg-gradient-to-r from-emerald-600 to-green-600 text-white">
+      {/* ========= CTA AZUL FINAL ========= */}
+      <section className="bg-brand-700 text-white">
         <div className="container py-10 grid md:grid-cols-2 gap-6 items-center">
           <div>
             <h3 className="text-xl md:text-2xl font-semibold">¿Listo para tu próxima operación inmobiliaria?</h3>
             <p className="opacity-95 mt-1">
-              Nuestro equipo está listo para ayudarte a alcanzar tus objetivos.
+              Nuestro equipo está preparado para ayudarte a alcanzar tus objetivos.
             </p>
           </div>
           <div className="flex md:justify-end gap-3">
-            <a href="/contacto" className="btn bg-white text-emerald-700 hover:bg-white/90">Contactar Ahora</a>
+            <a href="/contacto" className="btn bg-white text-brand-700 hover:bg-white/90">Contactar Ahora</a>
             <a href={`mailto:${SITE.email}`} className="btn btn-outline border-white text-white hover:bg-white/10">Escribir</a>
           </div>
         </div>
@@ -118,7 +133,7 @@ export default function Empresa() {
   )
 }
 
-/* ---------- componentes reutilizados con el mismo “feel” que Tasaciones ---------- */
+/* ================== componentes con el mismo “feel” que en Tasaciones ================== */
 
 function HeroBadge({ icon, title, desc }:{icon:React.ReactNode,title:string,desc:string}) {
   return (
@@ -184,8 +199,11 @@ function TeamCard({ name, role, desc }:{name:string,role:string,desc:string}) {
 function Testimonial({ text, author, role }:{text:string,author:string,role:string}) {
   return (
     <div className="card p-4">
-      <div className="flex items-center gap-1 text-amber-500 mb-2">
-        <Star className="w-4 h-4"/><Star className="w-4 h-4"/><Star className="w-4 h-4"/><Star className="w-4 h-4"/><Star className="w-4 h-4"/>
+      <div className="flex items-center gap-2 text-brand-700 mb-2">
+        <Quote className="w-5 h-5"/>
+        <div className="flex items-center gap-1 text-amber-500">
+          <Star className="w-4 h-4"/><Star className="w-4 h-4"/><Star className="w-4 h-4"/><Star className="w-4 h-4"/><Star className="w-4 h-4"/>
+        </div>
       </div>
       <p className="text-gray-700 italic">“{text}”</p>
       <div className="text-sm text-gray-600 mt-3"><strong>{author}</strong> · {role}</div>
