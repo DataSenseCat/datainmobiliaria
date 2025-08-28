@@ -2,41 +2,36 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { google } from 'googleapis'
 
-/**
- * GET  -> lista propiedades (lee Google Sheets)
- * POST -> crea propiedad (agrega fila)
- *
- * Requisitos:
- * - SHEET_ID
- * - GOOGLE_SERVICE_ACCOUNT_EMAIL
- * - GOOGLE_PRIVATE_KEY
- * - La hoja debe tener headers en la primera fila (pestaña "properties")
- */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
-    const SHEET_ID = process.env.SHEET_ID as string
-    const CLIENT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL as string
-    let PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY as string
+    const { sheetId, email, key } = resolveCredsFromEnv()
 
-    if (!SHEET_ID || !CLIENT_EMAIL || !PRIVATE_KEY) {
+    // Log mínimo de diagnóstico (no muestra los secretos)
+    console.log('ENV_DEBUG', {
+      hasSheetId: !!sheetId,
+      hasEmail: !!email,
+      hasKey: !!key,
+      method: req.method,
+    })
+
+    if (!sheetId || !email || !key) {
+      setCors(res)
       return res.status(500).json({ error: 'Missing Google Sheets env vars' })
     }
-    if (PRIVATE_KEY.includes('\\n')) PRIVATE_KEY = PRIVATE_KEY.replace(/\\n/g, '\n')
 
     const auth = new google.auth.JWT({
-      email: CLIENT_EMAIL,
-      key: PRIVATE_KEY,
+      email,
+      key,
       scopes: ['https://www.googleapis.com/auth/spreadsheets'], // read+write
     })
     const sheets = google.sheets({ version: 'v4', auth })
 
-    // CORS simple
     setCors(res)
     if (req.method === 'OPTIONS') return res.status(204).end()
 
     if (req.method === 'GET') {
       const { data } = await sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
+        spreadsheetId: sheetId,
         range: 'properties!A1:Z1000',
         valueRenderOption: 'UNFORMATTED_VALUE',
       })
@@ -44,7 +39,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (rows.length < 2) return res.status(200).json([])
 
       const [headers, ...values] = rows
-      const items = values.map(row =>
+      const items = values.map((row) =>
         Object.fromEntries(headers.map((h: any, i: number) => [String(h).trim(), row[i]]))
       )
 
@@ -77,31 +72,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (req.method === 'POST') {
-      const body = (typeof req.body === 'string') ? JSON.parse(req.body) : (req.body || {})
-      // leo headers actuales para construir el orden de la fila
+      const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {})
+
+      // Tomo headers para respetar el orden de columnas
       const meta = await sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
+        spreadsheetId: sheetId,
         range: 'properties!A1:1',
       })
       const headers: string[] = (meta.data.values?.[0] || []).map((h: any) => String(h).trim())
-
       if (!headers.length) {
         return res.status(500).json({ error: 'La hoja "properties" no tiene fila de headers (A1:1).' })
       }
 
-      // valores que vamos a enviar: respetar el orden de headers
       const now = new Date().toISOString()
-      const row = headers.map((h) => {
-        const k = h // el header tal cual
-        // normalizo claves comunes para mayor compat
-        switch (k) {
-          case 'created_at': return now
-          default: return body[k] ?? ''
-        }
-      })
+      const row = headers.map((h) => (h === 'created_at' ? now : (body[h] ?? '')))
 
       await sheets.spreadsheets.values.append({
-        spreadsheetId: SHEET_ID,
+        spreadsheetId: sheetId,
         range: 'properties!A1',
         valueInputOption: 'RAW',
         insertDataOption: 'INSERT_ROWS',
@@ -111,7 +98,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(201).json({ ok: true })
     }
 
-    // método no soportado
     res.setHeader('Allow', 'GET,POST,OPTIONS')
     return res.status(405).json({ error: 'Method Not Allowed' })
   } catch (err: any) {
@@ -121,12 +107,57 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 }
 
-/* helpers */
+/* ===== helpers ===== */
+
+function resolveCredsFromEnv() {
+  // 1) ID de la sheet
+  const sheetId =
+    process.env.SHEET_ID ||
+    process.env.GOOGLE_SHEET_ID ||
+    process.env.GSHEET_ID ||
+    ''
+
+  // 2) Credenciales separadas
+  let email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || ''
+  let key = process.env.GOOGLE_PRIVATE_KEY || ''
+
+  // 3) O credenciales empaquetadas (JSON o Base64 de JSON)
+  const packed =
+    process.env.GOOGLE_CREDENTIALS ||
+    process.env.GOOGLE_SERVICE_ACCOUNT ||
+    process.env.GCP_SERVICE_ACCOUNT ||
+    ''
+
+  if ((!email || !key) && packed) {
+    try {
+      const asText = looksLikeBase64(packed)
+        ? Buffer.from(packed, 'base64').toString('utf8')
+        : packed
+      const obj = JSON.parse(asText)
+      email ||= obj.client_email || obj.email || ''
+      key ||= obj.private_key || ''
+    } catch (e) {
+      console.warn('WARN: No se pudo parsear GOOGLE_CREDENTIALS / SERVICE_ACCOUNT')
+    }
+  }
+
+  // Fix saltos de línea escapados
+  if (key && key.includes('\\n')) key = key.replace(/\\n/g, '\n')
+
+  return { sheetId, email, key }
+}
+
+function looksLikeBase64(s: string) {
+  // heurística simple (evita parsear JSON si viene en base64)
+  return /^[A-Za-z0-9+/=]+$/.test(s.trim())
+}
+
 function setCors(res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
 }
+
 function toNum(v: any) { const n = Number(v); return Number.isFinite(n) ? n : 0 }
 function truthy(v: any) {
   if (typeof v === 'boolean') return v
