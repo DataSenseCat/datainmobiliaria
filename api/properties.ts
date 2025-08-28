@@ -2,161 +2,166 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { google } from 'googleapis'
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  try {
-    const { sheetId, email, key } = resolveCredsFromEnv()
-
-    // CORS
-    setCors(res)
-    if (req.method === 'OPTIONS') return res.status(204).end()
-
-    // --- Modo diagnóstico: /api/properties?diag=1 ---
-    const diag = 'diag' in (req.query || {})
-    if (diag) {
-      return res.status(200).json({
-        ok: true,
-        hasSheetId: !!sheetId,
-        hasEmail: !!email,
-        hasKey: !!key,
-        keyLen: key ? key.length : 0,
-        vercelEnv: process.env.VERCEL_ENV || null,
-        nodeEnv: process.env.NODE_ENV || null,
-      })
-    }
-
-    if (!sheetId || !email || !key) {
-      return res.status(500).json({ error: 'Missing Google Sheets env vars' })
-    }
-
-    const auth = new google.auth.JWT({
-      email,
-      key,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'], // read+write
-    })
-    const sheets = google.sheets({ version: 'v4', auth })
-
-    if (req.method === 'GET') {
-      const { data } = await sheets.spreadsheets.values.get({
-        spreadsheetId: sheetId,
-        range: 'properties!A1:Z1000',
-        valueRenderOption: 'UNFORMATTED_VALUE',
-      })
-      const rows = data.values || []
-      if (rows.length < 2) return res.status(200).json([])
-
-      const [headers, ...values] = rows
-      const items = values.map((row) =>
-        Object.fromEntries(headers.map((h: any, i: number) => [String(h).trim(), row[i]]))
-      )
-
-      const mapped = items.map((it: any) => ({
-        id: it.id ?? it.ID ?? null,
-        titulo: it.titulo ?? it.title ?? '',
-        ciudad: it.ciudad ?? it.city ?? '',
-        direccion: it.direccion ?? it.address ?? '',
-        descripcion: it.descripcion ?? it.description ?? '',
-        tipo: it.tipo ?? '',
-        operacion: it.operacion ?? '',
-        destacada: truthy(it.destacada),
-        activa: truthy(it.activa),
-        habitaciones: toNum(it.habitaciones),
-        banos: toNum(it.banos ?? it['baños']),
-        m2_cubiertos: toNum(it.m2_cubiertos ?? it.m2cubiertos),
-        m2_totales: toNum(it.m2_totales ?? it.m2totales),
-        precio_usd: toNum(it.precio_usd),
-        precio_ars: toNum(it.precio_ars),
-        cochera: truthy(it.cochera),
-        piscina: truthy(it.piscina),
-        dpto_servicio: truthy(it.dpto_servicio),
-        quincho: truthy(it.quincho),
-        parrillero: truthy(it.parrillero),
-        imagenes: it.imagenes ?? '',
-        created_at: it.created_at ?? '',
-      }))
-
-      return res.status(200).json(mapped)
-    }
-
-    if (req.method === 'POST') {
-      const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {})
-      const meta = await sheets.spreadsheets.values.get({
-        spreadsheetId: sheetId,
-        range: 'properties!A1:1',
-      })
-      const headers: string[] = (meta.data.values?.[0] || []).map((h: any) => String(h).trim())
-      if (!headers.length) {
-        return res.status(500).json({ error: 'La hoja "properties" no tiene fila de headers (A1:1).' })
-      }
-
-      const now = new Date().toISOString()
-      const row = headers.map((h) => (h === 'created_at' ? now : (body[h] ?? '')))
-
-      await sheets.spreadsheets.values.append({
-        spreadsheetId: sheetId,
-        range: 'properties!A1',
-        valueInputOption: 'RAW',
-        insertDataOption: 'INSERT_ROWS',
-        requestBody: { values: [row] },
-      })
-
-      return res.status(201).json({ ok: true })
-    }
-
-    res.setHeader('Allow', 'GET,POST,OPTIONS')
-    return res.status(405).json({ error: 'Method Not Allowed' })
-  } catch (err: any) {
-    console.error('GSHEETS_ERROR', err?.message, err)
-    setCors(res)
-    return res.status(500).json({ error: 'GSHEETS_ERROR', detail: err?.message })
-  }
-}
-
-/* ===== helpers ===== */
-
-function resolveCredsFromEnv() {
-  const sheetId =
-    process.env.SHEET_ID ||
-    process.env.GOOGLE_SHEET_ID ||
-    process.env.GSHEET_ID ||
-    ''
-
-  let email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || ''
-  let key = process.env.GOOGLE_PRIVATE_KEY || ''
-
-  const packed =
-    process.env.GOOGLE_CREDENTIALS ||
-    process.env.GOOGLE_SERVICE_ACCOUNT ||
-    process.env.GCP_SERVICE_ACCOUNT ||
-    ''
-
-  if ((!email || !key) && packed) {
-    try {
-      const asText = looksLikeBase64(packed)
-        ? Buffer.from(packed, 'base64').toString('utf8')
-        : packed
-      const obj = JSON.parse(asText)
-      email ||= obj.client_email || obj.email || ''
-      key ||= obj.private_key || ''
-    } catch {
-      console.warn('WARN: No se pudo parsear GOOGLE_CREDENTIALS / SERVICE_ACCOUNT')
-    }
-  }
-
-  if (key && key.includes('\\n')) key = key.replace(/\\n/g, '\n')
-  return { sheetId, email, key }
-}
-
-function looksLikeBase64(s: string) {
-  return /^[A-Za-z0-9+/=]+$/.test(s.trim())
-}
+/* ---------- CORS ---------- */
 function setCors(res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
 }
-function toNum(v: any) { const n = Number(v); return Number.isFinite(n) ? n : 0 }
-function truthy(v: any) {
-  if (typeof v === 'boolean') return v
-  const s = String(v ?? '').toLowerCase()
-  return s === 'true' || s === '1' || s === 'sí' || s === 'si' || s === 'x'
+
+/* ---------- credenciales desde ENV ---------- */
+function looksLikeBase64(s: string) { return /^[A-Za-z0-9+/=]+$/.test((s||'').trim()) }
+
+function resolveCredsFromEnv() {
+  let email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || ''
+  let key = process.env.GOOGLE_PRIVATE_KEY || ''
+  const packed = process.env.GOOGLE_CREDENTIALS || process.env.GOOGLE_SERVICE_ACCOUNT || process.env.GCP_SERVICE_ACCOUNT || ''
+  if ((!email || !key) && packed) {
+    try {
+      const asText = looksLikeBase64(packed) ? Buffer.from(packed, 'base64').toString('utf8') : packed
+      const obj = JSON.parse(asText)
+      email ||= obj.client_email || obj.email || ''
+      key ||= obj.private_key || ''
+    } catch {}
+  }
+  if (key.includes('\\n')) key = key.replace(/\\n/g, '\n')
+  const sheetId = process.env.SHEET_ID || process.env.GOOGLE_SHEET_ID || ''
+  return { email, key, sheetId }
+}
+
+/* ---------- helpers Sheets ---------- */
+function sheetsClient(email: string, key: string) {
+  const auth = new google.auth.JWT({
+    email,
+    key,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  })
+  return google.sheets({ version: 'v4', auth })
+}
+
+async function readAll(sheets: ReturnType<typeof sheetsClient>, sheetId: string, range = 'properties!A1:ZZZ') {
+  const r = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range })
+  const values = r.data.values || []
+  if (!values.length) return []
+  const headers = values[0].map((h) => String(h || '').trim())
+  const rows = values.slice(1)
+  return rows.map((row) => {
+    const obj: Record<string, any> = {}
+    headers.forEach((h, i) => { obj[h] = row[i] ?? '' })
+    return obj
+  })
+}
+
+function uid() { return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}` }
+
+async function appendRow(
+  sheets: ReturnType<typeof sheetsClient>,
+  sheetId: string,
+  payload: Record<string, any>,
+  sheetName = 'properties'
+) {
+  // Lee header actual para preservar el orden de columnas
+  const headResp = await sheets.spreadsheets.values.get({
+    spreadsheetId: sheetId,
+    range: `${sheetName}!A1:ZZZ1`,
+  })
+  const headers = (headResp.data.values?.[0] || []).map((h) => String(h || '').trim())
+
+  // Si la hoja estuviera vacía, definimos columnas recomendadas
+  const cols = headers.length
+    ? headers
+    : [
+        'id','titulo','ciudad','direccion','descripcion','tipo','operacion',
+        'destacada','activa','habitaciones','banos','m2_cubiertos','m2_totales',
+        'precio_usd','precio_ars','cochera','piscina','dpto_servicio','quincho','parrillero',
+        'imagenes','created_at'
+      ]
+
+  // Normaliza payload -> string (para Sheets)
+  const row = cols.map((c) => {
+    const v = payload[c]
+    if (v === undefined || v === null) return ''
+    if (typeof v === 'object') return JSON.stringify(v)
+    return String(v)
+  })
+
+  // Si la hoja estaba vacía, escribimos headers primero
+  if (!headers.length) {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: sheetId,
+      range: `${sheetName}!A1`,
+      valueInputOption: 'RAW',
+      requestBody: { values: [cols] },
+    })
+  }
+
+  // Append de la fila
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: sheetId,
+    range: `${sheetName}!A1`,
+    valueInputOption: 'RAW',
+    insertDataOption: 'INSERT_ROWS',
+    requestBody: { values: [row] },
+  })
+
+  return { ok: true }
+}
+
+/* ---------- handler ---------- */
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  setCors(res)
+  if (req.method === 'OPTIONS') return res.status(204).end()
+
+  const { email, key, sheetId } = resolveCredsFromEnv()
+  if (!email || !key || !sheetId) {
+    return res.status(500).json({ error: 'Missing Google Sheets env vars' })
+  }
+
+  const sheets = sheetsClient(email, key)
+
+  try {
+    if (req.method === 'GET') {
+      const rows = await readAll(sheets, sheetId, 'properties!A1:ZZZ')
+      return res.status(200).json(rows)
+    }
+
+    if (req.method === 'POST') {
+      const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {}
+
+      // Sanitiza y completa
+      const now = new Date().toISOString()
+      const rowData: Record<string, any> = {
+        id: body.id || uid(),
+        titulo: body.titulo || '',
+        ciudad: body.ciudad || '',
+        direccion: body.direccion || '',
+        descripcion: body.descripcion || '',
+        tipo: body.tipo || '',
+        operacion: body.operacion || '',
+        destacada: body.destacada ? 'true' : '',
+        activa: body.activa !== false ? 'true' : '',
+        habitaciones: body.habitaciones ?? '',
+        banos: body.banos ?? body['baños'] ?? '',
+        m2_cubiertos: body.m2_cubiertos ?? body.m2cubiertos ?? '',
+        m2_totales: body.m2_totales ?? body.m2totales ?? '',
+        precio_usd: body.precio_usd ?? '',
+        precio_ars: body.precio_ars ?? '',
+        cochera: body.cochera ? 'true' : '',
+        piscina: body.piscina ? 'true' : '',
+        dpto_servicio: body.dpto_servicio ? 'true' : '',
+        quincho: body.quincho ? 'true' : '',
+        parrillero: body.parrillero ? 'true' : '',
+        imagenes: Array.isArray(body.imagenes) ? JSON.stringify(body.imagenes) : String(body.imagenes ?? ''),
+        created_at: now,
+      }
+
+      await appendRow(sheets, sheetId, rowData, 'properties')
+      return res.status(201).json({ ok: true, id: rowData.id })
+    }
+
+    return res.status(405).json({ error: 'Method Not Allowed' })
+  } catch (err: any) {
+    console.error('SHEETS_API_ERROR', err?.message || err)
+    return res.status(500).json({ error: err?.message || 'Internal Error' })
+  }
 }

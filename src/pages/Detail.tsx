@@ -1,6 +1,5 @@
-// src/pages/Detail.tsx
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { Bath, BedDouble, Ruler, MapPin, Info, Star } from 'lucide-react'
 import PropertyCard, { normalize as normalizeCard } from '../components/PropertyCard'
 
@@ -23,7 +22,7 @@ function parseImages(s: string): string[] {
     const arr = JSON.parse(t)
     if (Array.isArray(arr)) return arr.map(String)
   } catch {}
-  return t.split(/[,\n;]+/).map(v => v.trim()).filter(Boolean)
+  return t.split(/[,\n;|]+/).map(v => v.trim()).filter(Boolean)
 }
 function normalize(raw: Raw) {
   const imgs = Array.isArray(raw.imagenes)
@@ -57,6 +56,13 @@ function normalize(raw: Raw) {
   }
 }
 
+function toImageUrl(src: string) {
+  if (!src) return '/img/placeholder-property.jpg'
+  if (/^https?:\/\//i.test(src)) return src
+  const id = src.startsWith('drive:') ? src.slice(6) : src
+  return `/api/image?id=${encodeURIComponent(id)}`
+}
+
 export default function Detail() {
   const { id } = useParams<{ id: string }>()
   const [items, setItems] = useState<Raw[]>([])
@@ -84,16 +90,15 @@ export default function Detail() {
     return raw ? normalize(raw) : null
   }, [items, id])
 
-  // Imágenes con fallback
   const images = useMemo(() => {
     const arr = prop?.images?.length ? prop.images : []
-    return (arr.length ? arr : ['/img/placeholder-property.jpg'])
+    return (arr.length ? arr : ['/img/placeholder-property.jpg']).map(toImageUrl)
   }, [prop])
 
   const main = images[idx % images.length]
 
   if (loading) return <div className="container py-10">Cargando…</div>
-  if (!prop) return <div className="container py-10">Propiedad no encontrada.</div>
+  if (!prop) return <div className="container py-10">Propiedad no encontrada. <Link to="/propiedades" className="text-brand-700 underline">Volver</Link></div>
 
   const isRent = prop.operation?.toLowerCase() === 'alquiler'
   const price =
@@ -113,7 +118,6 @@ export default function Detail() {
           alt={prop.title}
           className="w-full h-[420px] object-cover"
         />
-        {/* miniaturas */}
         <div className="absolute bottom-3 left-3 flex gap-2">
           {images.slice(0, 8).map((src, i) => (
             <button
@@ -133,7 +137,7 @@ export default function Detail() {
         </div>
       </div>
 
-      {/* Título, chips y precio */}
+      {/* Cabecera */}
       <div className="mt-5 grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <div className="flex items-center justify-between mb-2">
@@ -173,7 +177,6 @@ export default function Detail() {
               {prop.description || 'Sin descripción.'}
             </p>
 
-            {/* Chips */}
             <div className="mt-4 flex flex-wrap gap-2 text-[12px]">
               {prop.cochera && <span className="chip-badge">🚗 Cochera</span>}
               {prop.piscina && <span className="chip-badge">🏊 Piscina</span>}
@@ -195,7 +198,7 @@ export default function Detail() {
           </section>
         </div>
 
-        {/* Formulario lateral */}
+        {/* Form lateral */}
         <aside className="card h-max">
           <h3 className="font-semibold mb-2">Contactar por esta propiedad</h3>
           <form

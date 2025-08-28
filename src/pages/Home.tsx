@@ -1,7 +1,6 @@
-// src/pages/Home.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import PropertyCard, { normalize } from '../components/PropertyCard'
+import PropertyCard from '../components/PropertyCard'
 
 type Raw = Record<string, any>
 
@@ -28,13 +27,11 @@ export default function Home() {
   const featured = useMemo(() => {
     const arr = items.filter((x) => truthy(x.destacada))
     if (arr.length) return arr
-    // fallback si no hay destacadas: muestra las primeras
     return items.slice(0, 6)
   }, [items])
 
   return (
     <div className="container py-10">
-      {/* Hero muy simple (opcional) */}
       <header className="text-center mb-10">
         <h1 className="text-3xl md:text-4xl font-bold">Propiedades Destacadas</h1>
         <p className="text-gray-600 mt-2">
@@ -42,15 +39,10 @@ export default function Home() {
         </p>
       </header>
 
-      {/* Grid de propiedades */}
       {loading ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
+          <SkeletonCard /><SkeletonCard /><SkeletonCard />
+          <SkeletonCard /><SkeletonCard /><SkeletonCard />
         </div>
       ) : featured.length ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -62,7 +54,6 @@ export default function Home() {
         <EmptyState />
       )}
 
-      {/* CTA inferior */}
       <div className="mt-10 flex justify-center">
         <Link to="/propiedades" className="btn btn-primary">
           Ver Todas las Propiedades
@@ -71,8 +62,6 @@ export default function Home() {
     </div>
   )
 }
-
-/* ================== auxiliares ================== */
 
 function truthy(v: any) {
   if (typeof v === 'boolean') return v
