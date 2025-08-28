@@ -1,61 +1,98 @@
+// api/properties.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { readSheet, appendRow, updateRowById, softDeleteById } from './_sheets'
-import { isAuthorized } from './_auth'
-import { randomUUID } from 'crypto'
+import { google } from 'googleapis'
 
-function matches(p:any, q:any){
-  const num = (v:any)=> v==null || v==='' ? null : Number(v)
-  const within = (v:number|null, min?:number|null, max?:number|null)=> (v==null) ? true : (min!=null && v<min) ? false : (max!=null && v>max) ? false : true
-  if(q.city && (p.city||'').toLowerCase().indexOf(String(q.city).toLowerCase()) === -1) return false
-  if(q.property_type && (p.property_type||'') !== q.property_type) return false
-  if(q.operation_type && (p.operation_type||'') !== q.operation_type) return false
-  if(q.bedrooms && Number(p.bedrooms||0) < Number(q.bedrooms)) return false
-  const v = num(p.price); const min = num(q.priceMin); const max = num(q.priceMax)
-  if(!within(v, min, max)) return false
-  if(q.id && p.id !== q.id) return false
-  if(String(p.active||'true').toLowerCase()==='false') return false
-  return true
+/**
+ * Lee la hoja "properties" de Google Sheets y devuelve un array de objetos.
+ * - Usa la primera fila como headers.
+ * - Normaliza algunos campos típicos que usa el front.
+ */
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  try {
+    // -------- 1) ENV VARS --------
+    const SHEET_ID = process.env.SHEET_ID as string
+    const CLIENT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL as string
+    let PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY as string
+
+    if (!SHEET_ID || !CLIENT_EMAIL || !PRIVATE_KEY) {
+      return res.status(500).json({ error: 'Missing Google Sheets env vars' })
+    }
+
+    // Si la clave se guardó con "\n", restaurar saltos reales
+    if (PRIVATE_KEY.includes('\\n')) {
+      PRIVATE_KEY = PRIVATE_KEY.replace(/\\n/g, '\n')
+    }
+
+    // -------- 2) AUTH (constructor por opciones para evitar errores TS) --------
+    const auth = new google.auth.JWT({
+      email: CLIENT_EMAIL,
+      key: PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+    })
+
+    const sheets = google.sheets({ version: 'v4', auth })
+
+    // -------- 3) LECTURA --------
+    // Cambiá el nombre de la pestaña/rango si tu hoja no se llama "properties"
+    const { data } = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: 'properties!A1:Z1000',
+      valueRenderOption: 'UNFORMATTED_VALUE',
+    })
+
+    const rows = data.values || []
+    if (rows.length < 2) {
+      // Sin datos: devolvemos array vacío
+      setCors(res)
+      return res.status(200).json([])
+    }
+
+    // Primera fila como headers
+    const [headers, ...values] = rows
+    const items = values.map((row) =>
+      Object.fromEntries(headers.map((h: any, i: number) => [String(h).trim(), row[i]]))
+    )
+
+    // -------- 4) Normalización para el front --------
+    const mapped = items.map((it: any) => ({
+      id: it.id ?? it.ID ?? it.Id ?? null,
+      titulo: it.titulo ?? it.title ?? it.Titulo ?? '',
+      tipo: it.tipo ?? it.type ?? '',
+      operacion: it.operacion ?? it.operation ?? '',
+      ciudad: it.ciudad ?? it.city ?? '',
+      precio: num(it.precio),
+      dormitorios: num(it.dormitorios),
+      banos: num(it.banos ?? it.baños),
+      metros: num(it.m2 ?? it.metros ?? it.superficie),
+      destacado: it.destacado === 'TRUE' || it.destacado === true || it.destacado === 1,
+      imagen: it.imagen ?? it.image ?? '',
+      imagen2: it.imagen2 ?? '',
+      direccion: it.direccion ?? it.address ?? '',
+      coords: it.coords ?? it.ubicacion ?? null,
+      descripcion: it.descripcion ?? it.description ?? '',
+      // agrega aquí cualquier otro campo que tengas en la sheet
+    }))
+
+    // -------- 5) CORS + respuesta --------
+    setCors(res)
+    if (req.method === 'OPTIONS') return res.status(204).end()
+    return res.status(200).json(mapped)
+  } catch (err: any) {
+    console.error('GSHEETS_ERROR', err?.message, err?.stack)
+    setCors(res)
+    return res.status(500).json({ error: 'GSHEETS_ERROR', detail: err?.message })
+  }
 }
 
-function toBool(v:any){ return typeof v === 'boolean' ? v : String(v).toLowerCase()==='true' }
-function toNum(v:any){ return v==='' || v==null ? undefined : Number(v) }
+/* ========== helpers ========== */
 
-export default async function handler(req: VercelRequest, res: VercelResponse){
-  try{
-    if(req.method === 'GET'){
-      const props = await readSheet('properties')
-      const imgs = await readSheet('images')
-      const result = props.filter(p=>matches(p, req.query)).map(p=>{
-        const images = imgs.filter((i:any)=> i.property_id === p.id).map((i:any)=>({ ...i, is_primary: toBool(i.is_primary), order_index: toNum(i.order_index) }))
-        return { ...p,
-          price: toNum(p.price), bedrooms: toNum(p.bedrooms), bathrooms: toNum(p.bathrooms),
-          latitude: toNum(p.latitude), longitude: toNum(p.longitude),
-          images
-        }
-      })
-      if(req.query.id) return res.status(200).json(result[0] || null)
-      return res.status(200).json(result)
-    }
-    if(req.method === 'POST'){
-      if(!isAuthorized(req)) return res.status(401).json({ error: 'Unauthorized' })
-      const body = req.body || {}
-      const id = body.id || randomUUID()
-      const now = new Date().toISOString()
-      const obj = { id, created_at: now, updated_at: now, active: 'true', ...body }
-      const all = await readSheet('properties')
-      const exists = all.find((r:any)=> r.id === id)
-      if(exists) await updateRowById('properties', id, obj)
-      else await appendRow('properties', obj)
-      return res.status(200).json({ id })
-    }
-    if(req.method === 'DELETE'){
-      if(!isAuthorized(req)) return res.status(401).json({ error: 'Unauthorized' })
-      const id = (req.query.id||'').toString()
-      await softDeleteById('properties', id)
-      return res.status(200).json({ ok: true })
-    }
-    return res.status(405).send('Method not allowed')
-  }catch(e:any){
-    return res.status(500).json({ error: e.message })
-  }
+function setCors(res: VercelResponse) {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+}
+
+function num(v: any) {
+  const n = Number(v)
+  return Number.isFinite(n) ? n : 0
 }
