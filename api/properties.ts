@@ -6,16 +6,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { sheetId, email, key } = resolveCredsFromEnv()
 
-    // Log mínimo de diagnóstico (no muestra los secretos)
-    console.log('ENV_DEBUG', {
-      hasSheetId: !!sheetId,
-      hasEmail: !!email,
-      hasKey: !!key,
-      method: req.method,
-    })
+    // CORS
+    setCors(res)
+    if (req.method === 'OPTIONS') return res.status(204).end()
+
+    // --- Modo diagnóstico: /api/properties?diag=1 ---
+    const diag = 'diag' in (req.query || {})
+    if (diag) {
+      return res.status(200).json({
+        ok: true,
+        hasSheetId: !!sheetId,
+        hasEmail: !!email,
+        hasKey: !!key,
+        keyLen: key ? key.length : 0,
+        vercelEnv: process.env.VERCEL_ENV || null,
+        nodeEnv: process.env.NODE_ENV || null,
+      })
+    }
 
     if (!sheetId || !email || !key) {
-      setCors(res)
       return res.status(500).json({ error: 'Missing Google Sheets env vars' })
     }
 
@@ -25,9 +34,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       scopes: ['https://www.googleapis.com/auth/spreadsheets'], // read+write
     })
     const sheets = google.sheets({ version: 'v4', auth })
-
-    setCors(res)
-    if (req.method === 'OPTIONS') return res.status(204).end()
 
     if (req.method === 'GET') {
       const { data } = await sheets.spreadsheets.values.get({
@@ -73,8 +79,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (req.method === 'POST') {
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {})
-
-      // Tomo headers para respetar el orden de columnas
       const meta = await sheets.spreadsheets.values.get({
         spreadsheetId: sheetId,
         range: 'properties!A1:1',
@@ -110,18 +114,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 /* ===== helpers ===== */
 
 function resolveCredsFromEnv() {
-  // 1) ID de la sheet
   const sheetId =
     process.env.SHEET_ID ||
     process.env.GOOGLE_SHEET_ID ||
     process.env.GSHEET_ID ||
     ''
 
-  // 2) Credenciales separadas
   let email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || ''
   let key = process.env.GOOGLE_PRIVATE_KEY || ''
 
-  // 3) O credenciales empaquetadas (JSON o Base64 de JSON)
   const packed =
     process.env.GOOGLE_CREDENTIALS ||
     process.env.GOOGLE_SERVICE_ACCOUNT ||
@@ -136,28 +137,23 @@ function resolveCredsFromEnv() {
       const obj = JSON.parse(asText)
       email ||= obj.client_email || obj.email || ''
       key ||= obj.private_key || ''
-    } catch (e) {
+    } catch {
       console.warn('WARN: No se pudo parsear GOOGLE_CREDENTIALS / SERVICE_ACCOUNT')
     }
   }
 
-  // Fix saltos de línea escapados
   if (key && key.includes('\\n')) key = key.replace(/\\n/g, '\n')
-
   return { sheetId, email, key }
 }
 
 function looksLikeBase64(s: string) {
-  // heurística simple (evita parsear JSON si viene en base64)
   return /^[A-Za-z0-9+/=]+$/.test(s.trim())
 }
-
 function setCors(res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
 }
-
 function toNum(v: any) { const n = Number(v); return Number.isFinite(n) ? n : 0 }
 function truthy(v: any) {
   if (typeof v === 'boolean') return v
