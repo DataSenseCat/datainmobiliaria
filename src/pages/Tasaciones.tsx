@@ -7,49 +7,44 @@ import { useRef } from 'react'
 
 export default function Tasaciones() {
   const formRef = useRef<HTMLDivElement>(null)
-  const scrollToForm = () => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const goForm = () => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
   return (
     <div className="w-full">
-      {/* HERO azul */}
+      {/* === HERO AZUL centrado con pill + badges (como inmobiliaria1) === */}
       <section className="bg-brand-600 text-white">
-        <div className="container py-12">
-          {/* Pill */}
+        <div className="container py-12 text-center">
           <div className="inline-flex items-center gap-2 text-xs md:text-sm bg-white/15 rounded-full px-3 py-1 mb-3">
             <span className="bg-white text-brand-600 px-2 py-0.5 rounded-full font-semibold">Servicio Gratuito</span>
             <span className="opacity-90">sin costos ocultos</span>
           </div>
 
           <h1 className="text-3xl md:text-4xl font-bold">Tasación Gratuita de tu Propiedad</h1>
-          <p className="opacity-90 mt-2 max-w-3xl">
-            Conocé el valor real de tu propiedad con nuestra tasación profesional y gratuita.
-            Más de 15 años de experiencia en el mercado inmobiliario catamarqueño.
+          <p className="opacity-90 mt-2 max-w-3xl mx-auto">
+            Conocé el valor real de tu propiedad con nuestra tasación profesional y gratuita. Más de 15 años de experiencia en el mercado inmobiliario catamarqueño.
           </p>
 
-          {/* Badges con icono */}
-          <div className="mt-6 grid md:grid-cols-3 gap-3">
+          {/* Badges de 3 columnas */}
+          <div className="mt-6 grid md:grid-cols-3 gap-3 max-w-4xl mx-auto">
             <HeroBadge icon={<CheckCircle2 className="w-5 h-5" />} title="100% Gratuito" desc="sin costos ocultos" />
             <HeroBadge icon={<Clock className="w-5 h-5" />} title="Respuesta en 24hs" desc="contacto inmediato" />
             <HeroBadge icon={<FileText className="w-5 h-5" />} title="Informe Completo" desc="análisis detallado" />
           </div>
 
-          {/* CTA del hero */}
-          <div className="mt-6 flex items-center gap-3">
-            <button onClick={scrollToForm} className="btn btn-primary">Solicitar Tasación</button>
-            <a href="/contacto" className="btn btn-outline">Contactar asesor</a>
+          <div className="mt-6 flex items-center justify-center gap-3">
+            <button onClick={goForm} className="btn bg-white text-brand-700 hover:bg-white/90">Solicitar Tasación</button>
+            <a href="/contacto" className="btn btn-outline border-white text-white hover:bg-white/10">Contactar asesor</a>
           </div>
         </div>
       </section>
 
-      {/* FORM + SIDEBAR */}
+      {/* === FORM + SIDEBAR sobrepuesto === */}
       <section ref={formRef} className="container -mt-10 relative z-10">
         <div className="grid md:grid-cols-3 gap-6">
-          {/* Formulario (col izquierda) */}
+          {/* Formulario */}
           <div className="md:col-span-2 card p-6">
             <h2 className="text-lg font-semibold mb-1">Solicitar Tasación Gratuita</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              Completá el formulario y nos contactamos con vos en las próximas 24 horas.
-            </p>
+            <p className="text-sm text-gray-600 mb-4">Completá el formulario y nos contactamos en las próximas 24 horas.</p>
 
             <form className="grid grid-cols-2 gap-3">
               <input placeholder="Nombre completo *" required />
@@ -61,64 +56,55 @@ export default function Tasaciones() {
                 <option value="" disabled>Seleccionar tipo</option>
                 <option>Casa</option><option>Departamento</option><option>Lote</option><option>Local</option>
               </select>
-              <textarea className="col-span-2" rows={4} placeholder="Detalles adicionales sobre la propiedad..." />
+              <textarea className="col-span-2" rows={4} placeholder="Comentarios adicionales sobre la propiedad..." />
 
-              {/* Info compacta como en la referencia */}
               <div className="col-span-2 text-xs text-gray-600 -mt-1">
-                <strong>¿Qué incluye la tasación?</strong> Evaluación presencial (si aplica), análisis comparativo de mercado,
-                informe orientativo de valor y recomendaciones para mejorar el valor.
+                <strong>¿Qué incluye la tasación?</strong> Evaluación presencial (si aplica), análisis comparativo de mercado, informe orientativo de valor y recomendaciones para mejorar el valor.
               </div>
 
               <button type="submit" className="btn btn-primary col-span-2 mt-1">Solicitar Tasación Gratuita</button>
-              <p className="text-xs text-gray-500 col-span-2">
-                Al enviar este formulario aceptás ser contactado para coordinar la tasación. Tus datos se mantienen confidenciales.
-              </p>
+              <p className="text-xs text-gray-500 col-span-2">Al enviar este formulario aceptás que nos contactemos para coordinar la tasación. Tus datos se mantienen confidenciales.</p>
             </form>
           </div>
 
-          {/* Sidebar (col derecha) */}
+          {/* Sidebar */}
           <aside className="flex flex-col gap-6">
             <div className="card p-6">
               <h3 className="font-semibold mb-3">¿Cómo funciona?</h3>
               <ol className="space-y-3 text-sm text-gray-700">
-                <Step n={1} title="Contacto Inicial" desc="Te llamamos para conocer los detalles de tu propiedad." />
-                <Step n={2} title="Visita Técnica" desc="Inspección, fotos y relevamiento de datos relevantes." />
+                <Step n={1} title="Contacto Inicial" desc="Nos comunicamos para conocer detalles de tu propiedad." />
+                <Step n={2} title="Visita Técnica" desc="Inspección, fotos y relevamiento." />
                 <Step n={3} title="Análisis de Mercado" desc="Comparativos reales de la zona y operaciones recientes." />
-                <Step n={4} title="Informe Detallado" desc="Valor estimado e ideas para maximizar el precio." />
+                <Step n={4} title="Informe Detallado" desc="Valor estimado y recomendaciones para maximizar el precio." />
               </ol>
             </div>
 
             <div className="card p-6">
               <h3 className="font-semibold mb-2">¿Preferís contactarnos directamente?</h3>
               <div className="space-y-2 text-sm text-gray-700">
-                <p className="flex items-center gap-2">
-                  <MessageCircle className="w-4 h-4 text-emerald-600"/> WhatsApp: {SITE.whatsapp}
-                </p>
-                <p className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-blue-600"/> Email: <a href={`mailto:${SITE.email}`} className="underline">{SITE.email}</a>
-                </p>
-                <p className="flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-gray-700"/> Teléfono: <a href={`tel:${SITE.phone}`} className="underline">{SITE.phone}</a>
-                </p>
+                <p className="flex items-center gap-2"><MessageCircle className="w-4 h-4 text-emerald-600"/> WhatsApp: {SITE.whatsapp}</p>
+                <p className="flex items-center gap-2"><Mail className="w-4 h-4 text-blue-600"/> Email: <a href={`mailto:${SITE.email}`} className="underline">{SITE.email}</a></p>
+                <p className="flex items-center gap-2"><Phone className="w-4 h-4 text-gray-700"/> Teléfono: <a href={`tel:${SITE.phone}`} className="underline">{SITE.phone}</a></p>
               </div>
             </div>
           </aside>
         </div>
       </section>
 
-      {/* Por qué elegirnos */}
+      {/* === Por qué elegirnos === */}
       <section className="container py-12">
         <h3 className="text-xl font-semibold text-center mb-2">¿Por qué elegir nuestra tasación?</h3>
-        <p className="text-center text-gray-600 mb-8">Somos líderes en Catamarca con un equipo de profesionales certificados.</p>
+        <p className="text-center text-gray-600 mb-8">Somos líderes en tasaciones en Catamarca con un equipo de profesionales certificados.</p>
+
         <div className="grid md:grid-cols-4 gap-4">
-          <FeatureCard icon={<Building2 className="w-5 h-5" />} title="15+ años de experiencia" desc="Amplia trayectoria en el mercado local." />
-          <FeatureCard icon={<Home className="w-5 h-5" />} title="Análisis actualizado" desc="Datos reales de operaciones y ofertas comparables." />
-          <FeatureCard icon={<CheckCircle2 className="w-5 h-5" />} title="Servicio gratuito" desc="Informe sin costo ni compromiso." />
-          <FeatureCard icon={<Clock className="w-5 h-5" />} title="Respuesta en 24 hs" desc="Coordinamos el contacto en menos de 24 horas." />
+          <FeatureCard icon={<Building2 className="w-5 h-5"/>} title="15+ años de experiencia" desc="Trayectoria en el mercado local." />
+          <FeatureCard icon={<Home className="w-5 h-5"/>} title="Análisis actualizado" desc="Datos reales de operaciones y ofertas comparables." />
+          <FeatureCard icon={<CheckCircle2 className="w-5 h-5"/>} title="Servicio gratuito" desc="Informe sin costo ni compromiso." />
+          <FeatureCard icon={<Clock className="w-5 h-5"/>} title="Respuesta en 24 hs" desc="Coordinamos el contacto en menos de 24 horas." />
         </div>
       </section>
 
-      {/* Testimonios */}
+      {/* === Testimonios === */}
       <section className="container pb-10">
         <h3 className="text-xl font-semibold mb-4">Lo que dicen nuestros clientes</h3>
         <div className="grid md:grid-cols-3 gap-4">
@@ -128,7 +114,7 @@ export default function Tasaciones() {
         </div>
       </section>
 
-      {/* FAQ */}
+      {/* === Preguntas frecuentes === */}
       <section className="container pb-12">
         <h3 className="text-xl font-semibold text-center mb-6">Preguntas Frecuentes</h3>
         <div className="max-w-3xl mx-auto space-y-3">
@@ -140,13 +126,13 @@ export default function Tasaciones() {
         </div>
       </section>
 
-      {/* CTA verde final */}
+      {/* === CTA verde final === */}
       <section className="bg-gradient-to-r from-emerald-600 to-green-600 text-white">
         <div className="container py-10 text-center">
           <h3 className="text-xl md:text-2xl font-semibold mb-2">¿Estás pensando en vender tu propiedad?</h3>
-          <p className="opacity-95 mb-5">Conocé el valor real y vendé al mejor precio con nuestro asesoramiento.</p>
+          <p className="opacity-95 mb-5">Una tasación profesional es el primer paso para una venta exitosa.</p>
           <div className="flex items-center justify-center gap-3">
-            <button onClick={scrollToForm} className="btn bg-white text-emerald-700 hover:bg-white/90">Solicitar Tasación Gratuita</button>
+            <button onClick={goForm} className="btn bg-white text-emerald-700 hover:bg-white/90">Solicitar Tasación Gratuita</button>
             <a href="/contacto" className="btn btn-outline border-white text-white hover:bg-white/10">Contactar Asesor</a>
           </div>
         </div>
@@ -155,7 +141,7 @@ export default function Tasaciones() {
   )
 }
 
-/* ---------- componentes pequeños con los mismos efectos ---------- */
+/* ======= componentes pequeños (idéntico “feel” al del sitio de referencia) ======= */
 
 function HeroBadge({ icon, title, desc }:{icon:React.ReactNode,title:string,desc:string}) {
   return (
