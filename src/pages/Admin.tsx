@@ -1,28 +1,55 @@
 // src/pages/Admin.tsx
-import { useState, useRef } from 'react'
+import { useRef, useState } from 'react'
 import {
-  ArrowLeft, Check, Home, Bath, Ruler, Car, Waves, CookingPot,
-  BadgeDollarSign, ImagePlus, HousePlus, Building2, ChevronDown
+  ArrowLeft,
+  Check,
+  Home,
+  Bath,
+  Ruler,
+  Car,
+  Waves,
+  CookingPot,
+  BadgeDollarSign,
+  ImagePlus,
+  HousePlus,
+  Building2,
+  ChevronDown,
 } from 'lucide-react'
-
-
 
 type Tab = 'basic' | 'details' | 'features' | 'pricing' | 'images'
 
 export default function Admin() {
   const [tab, setTab] = useState<Tab>('basic')
   const fileRef = useRef<HTMLInputElement>(null)
+  const [creating, setCreating] = useState(false)
 
-  // --- estado mínimo para inputs (si ya tenés estado propio, mantenelo y solo cambiá las clases) ---
+  // --- estado mínimo para inputs (adaptalo a tu store si ya tenés lógica propia) ---
   const [form, setForm] = useState({
-    titulo: '', ciudad: 'San Fernando del Valle de Catamarca', direccion: '',
-    descripcion: '', tipo: 'Casa', operacion: 'Venta',
-    destacada: false, activa: true,
-    habitaciones: '', banos: '', m2cubiertos: '', m2totales: '',
-    usd: '', ars: '',
+    titulo: '',
+    ciudad: 'San Fernando del Valle de Catamarca',
+    direccion: '',
+    descripcion: '',
+    tipo: 'Casa',
+    operacion: 'Venta',
+    destacada: false,
+    activa: true,
+
+    habitaciones: '',
+    banos: '',
+    m2cubiertos: '',
+    m2totales: '',
+
+    usd: '',
+    ars: '',
+
     features: {
-      cochera: false, piscina: false, dpto: false, quincho: false, parrillero: false,
+      cochera: false,
+      piscina: false,
+      dpto: false,
+      quincho: false,
+      parrillero: false,
     },
+
     imagenes: [] as File[],
   })
 
@@ -32,11 +59,73 @@ export default function Admin() {
     setForm((f) => ({ ...f, imagenes: files }))
   }
 
-  // helper de clase para tab
   const tabCls = (active: boolean) =>
     `px-4 py-2 rounded-xl text-sm border transition-all ${active
       ? 'bg-white text-gray-900 border-gray-200 shadow-sm'
       : 'bg-gray-100 text-gray-700 border-transparent hover:bg-gray-50'}`
+
+  async function handleCreate() {
+    try {
+      setCreating(true)
+
+      if (!form.titulo?.trim()) {
+        alert('Falta el título')
+        return
+      }
+      if (!form.ciudad?.trim()) {
+        alert('Falta la ciudad')
+        return
+      }
+
+      const payload = {
+        id: `prop_${Date.now()}`,
+        titulo: form.titulo,
+        ciudad: form.ciudad,
+        direccion: form.direccion,
+        descripcion: form.descripcion,
+        tipo: form.tipo, // Casa | Departamento | Lote | Local
+        operacion: form.operacion, // Venta | Alquiler
+        destacada: !!form.destacada,
+        activa: !!form.activa,
+
+        habitaciones: Number(form.habitaciones || 0),
+        banos: Number(form.banos || 0),
+        m2_cubiertos: Number(form.m2cubiertos || 0),
+        m2_totales: Number(form.m2totales || 0),
+
+        precio_usd: Number(form.usd || 0),
+        precio_ars: Number(form.ars || 0),
+
+        cochera: !!form.features.cochera,
+        piscina: !!form.features.piscina,
+        dpto_servicio: !!form.features.dpto,
+        quincho: !!form.features.quincho,
+        parrillero: !!form.features.parrillero,
+
+        imagenes: (form.imagenes || []).map((f) => f.name).join(', '),
+      }
+
+      const resp = await fetch('/api/properties', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}))
+        throw new Error(err?.detail || err?.error || `Error ${resp.status}`)
+      }
+
+      alert('¡Propiedad creada con éxito!')
+      // redirección de ejemplo (ajustá si tenés una lista específica)
+      window.location.href = '/admin'
+    } catch (e: any) {
+      console.error(e)
+      alert(`No se pudo crear la propiedad: ${e?.message || e}`)
+    } finally {
+      setCreating(false)
+    }
+  }
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -54,11 +143,21 @@ export default function Admin() {
 
         {/* tabs */}
         <div className="flex items-center gap-2 mb-4">
-          <button className={tabCls(tab === 'basic')} onClick={() => setTab('basic')}>Información Básica</button>
-          <button className={tabCls(tab === 'details')} onClick={() => setTab('details')}>Detalles</button>
-          <button className={tabCls(tab === 'features')} onClick={() => setTab('features')}>Características</button>
-          <button className={tabCls(tab === 'pricing')} onClick={() => setTab('pricing')}>Precios</button>
-          <button className={tabCls(tab === 'images')} onClick={() => setTab('images')}>Imágenes</button>
+          <button className={tabCls(tab === 'basic')} onClick={() => setTab('basic')}>
+            Información Básica
+          </button>
+          <button className={tabCls(tab === 'details')} onClick={() => setTab('details')}>
+            Detalles
+          </button>
+          <button className={tabCls(tab === 'features')} onClick={() => setTab('features')}>
+            Características
+          </button>
+          <button className={tabCls(tab === 'pricing')} onClick={() => setTab('pricing')}>
+            Precios
+          </button>
+          <button className={tabCls(tab === 'images')} onClick={() => setTab('images')}>
+            Imágenes
+          </button>
         </div>
 
         {/* panel */}
@@ -70,29 +169,49 @@ export default function Admin() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Título *</label>
-                  <input type="text" placeholder="Ej: Casa en Barrio Norte"
-                    value={form.titulo} onChange={e => setForm({ ...form, titulo: e.target.value })} />
+                  <input
+                    type="text"
+                    placeholder="Ej: Casa en Barrio Norte"
+                    value={form.titulo}
+                    onChange={(e) => setForm({ ...form, titulo: e.target.value })}
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Ciudad *</label>
-                  <input type="text" placeholder="San Fernando del Valle de Catamarca"
-                    value={form.ciudad} onChange={e => setForm({ ...form, ciudad: e.target.value })} />
+                  <input
+                    type="text"
+                    placeholder="San Fernando del Valle de Catamarca"
+                    value={form.ciudad}
+                    onChange={(e) => setForm({ ...form, ciudad: e.target.value })}
+                  />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium mb-1">Dirección</label>
-                  <input type="text" placeholder="Dirección completa"
-                    value={form.direccion} onChange={e => setForm({ ...form, direccion: e.target.value })} />
+                  <input
+                    type="text"
+                    placeholder="Dirección completa"
+                    value={form.direccion}
+                    onChange={(e) => setForm({ ...form, direccion: e.target.value })}
+                  />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium mb-1">Descripción</label>
-                  <textarea rows={4} placeholder="Descripción detallada de la propiedad..."
-                    value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })} />
+                  <textarea
+                    rows={4}
+                    placeholder="Descripción detallada de la propiedad..."
+                    value={form.descripcion}
+                    onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
+                  />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1">Tipo de Propiedad *</label>
                   <div className="relative">
-                    <select value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })} className="pr-8">
+                    <select
+                      value={form.tipo}
+                      onChange={(e) => setForm({ ...form, tipo: e.target.value })}
+                      className="pr-8"
+                    >
                       <option>Casa</option>
                       <option>Departamento</option>
                       <option>Lote</option>
@@ -105,7 +224,11 @@ export default function Admin() {
                 <div>
                   <label className="block text-sm font-medium mb-1">Operación *</label>
                   <div className="relative">
-                    <select value={form.operacion} onChange={e => setForm({ ...form, operacion: e.target.value })} className="pr-8">
+                    <select
+                      value={form.operacion}
+                      onChange={(e) => setForm({ ...form, operacion: e.target.value })}
+                      className="pr-8"
+                    >
                       <option>Venta</option>
                       <option>Alquiler</option>
                     </select>
@@ -116,13 +239,19 @@ export default function Admin() {
 
               <div className="flex items-center gap-6">
                 <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={form.destacada}
-                         onChange={e => setForm({ ...form, destacada: e.target.checked })} />
+                  <input
+                    type="checkbox"
+                    checked={form.destacada}
+                    onChange={(e) => setForm({ ...form, destacada: e.target.checked })}
+                  />
                   Propiedad Destacada
                 </label>
                 <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={form.activa}
-                         onChange={e => setForm({ ...form, activa: e.target.checked })} />
+                  <input
+                    type="checkbox"
+                    checked={form.activa}
+                    onChange={(e) => setForm({ ...form, activa: e.target.checked })}
+                  />
                   Activa
                 </label>
               </div>
@@ -134,24 +263,36 @@ export default function Admin() {
               <h2 className="text-xl font-semibold">Detalles de la Propiedad</h2>
               <div className="grid md:grid-cols-2 gap-4">
                 <Field icon={<HousePlus className="w-4 h-4 text-brand-600" />} label="Habitaciones">
-                  <input type="number" placeholder="Número de habitaciones"
-                         value={form.habitaciones}
-                         onChange={e => setForm({ ...form, habitaciones: e.target.value })} />
+                  <input
+                    type="number"
+                    placeholder="Número de habitaciones"
+                    value={form.habitaciones}
+                    onChange={(e) => setForm({ ...form, habitaciones: e.target.value })}
+                  />
                 </Field>
                 <Field icon={<Bath className="w-4 h-4 text-brand-600" />} label="Baños">
-                  <input type="number" placeholder="Número de baños"
-                         value={form.banos}
-                         onChange={e => setForm({ ...form, banos: e.target.value })} />
+                  <input
+                    type="number"
+                    placeholder="Número de baños"
+                    value={form.banos}
+                    onChange={(e) => setForm({ ...form, banos: e.target.value })}
+                  />
                 </Field>
                 <Field icon={<Ruler className="w-4 h-4 text-brand-600" />} label="Superficie Cubierta (m²)">
-                  <input type="number" placeholder="Metros cuadrados cubiertos"
-                         value={form.m2cubiertos}
-                         onChange={e => setForm({ ...form, m2cubiertos: e.target.value })} />
+                  <input
+                    type="number"
+                    placeholder="Metros cuadrados cubiertos"
+                    value={form.m2cubiertos}
+                    onChange={(e) => setForm({ ...form, m2cubiertos: e.target.value })}
+                  />
                 </Field>
                 <Field icon={<Ruler className="w-4 h-4 text-brand-600" />} label="Superficie Total (m²)">
-                  <input type="number" placeholder="Metros cuadrados totales"
-                         value={form.m2totales}
-                         onChange={e => setForm({ ...form, m2totales: e.target.value })} />
+                  <input
+                    type="number"
+                    placeholder="Metros cuadrados totales"
+                    value={form.m2totales}
+                    onChange={(e) => setForm({ ...form, m2totales: e.target.value })}
+                  />
                 </Field>
               </div>
             </section>
@@ -164,28 +305,32 @@ export default function Admin() {
                 <Feature
                   checked={form.features.cochera}
                   onChange={(v) => setForm({ ...form, features: { ...form.features, cochera: v } })}
-                  icon={<Car className="w-4 h-4" />} label="Cochera"
+                  icon={<Car className="w-4 h-4" />}
+                  label="Cochera"
                 />
                 <Feature
                   checked={form.features.piscina}
                   onChange={(v) => setForm({ ...form, features: { ...form.features, piscina: v } })}
-                  icon={<Waves className="w-4 h-4" />} label="Piscina"
+                  icon={<Waves className="w-4 h-4" />}
+                  label="Piscina"
                 />
-
                 <Feature
                   checked={form.features.dpto}
                   onChange={(v) => setForm({ ...form, features: { ...form.features, dpto: v } })}
-                  icon={<Building2 className="w-4 h-4" />} label="Dpto. de Servicio"
+                  icon={<Building2 className="w-4 h-4" />}
+                  label="Dpto. de Servicio"
                 />
                 <Feature
                   checked={form.features.quincho}
                   onChange={(v) => setForm({ ...form, features: { ...form.features, quincho: v } })}
-                  icon={<Home className="w-4 h-4" />} label="Quincho"
+                  icon={<Home className="w-4 h-4" />}
+                  label="Quincho"
                 />
                 <Feature
                   checked={form.features.parrillero}
                   onChange={(v) => setForm({ ...form, features: { ...form.features, parrillero: v } })}
-                  icon={<CookingPot className="w-4 h-4" />} label="Parrillero"
+                  icon={<CookingPot className="w-4 h-4" />}
+                  label="Parrillero"
                 />
               </div>
               <Note>
@@ -199,12 +344,20 @@ export default function Admin() {
               <h2 className="text-xl font-semibold">Precios</h2>
               <div className="grid md:grid-cols-2 gap-4">
                 <Field icon={<BadgeDollarSign className="w-4 h-4 text-brand-600" />} label="Precio en USD">
-                  <input type="number" placeholder="Precio en dólares"
-                         value={form.usd} onChange={e => setForm({ ...form, usd: e.target.value })} />
+                  <input
+                    type="number"
+                    placeholder="Precio en dólares"
+                    value={form.usd}
+                    onChange={(e) => setForm({ ...form, usd: e.target.value })}
+                  />
                 </Field>
                 <Field icon={<BadgeDollarSign className="w-4 h-4 text-brand-600" />} label="Precio en ARS">
-                  <input type="number" placeholder="Precio en pesos"
-                         value={form.ars} onChange={e => setForm({ ...form, ars: e.target.value })} />
+                  <input
+                    type="number"
+                    placeholder="Precio en pesos"
+                    value={form.ars}
+                    onChange={(e) => setForm({ ...form, ars: e.target.value })}
+                  />
                 </Field>
               </div>
               <Note>
@@ -221,7 +374,9 @@ export default function Admin() {
                 onClick={onPickImages}
               >
                 <ImagePlus className="w-8 h-8 mb-2" />
-                <div><strong>Click para subir</strong> imágenes</div>
+                <div>
+                  <strong>Click para subir</strong> imágenes
+                </div>
                 <div className="text-xs text-gray-500 mt-1">PNG, JPG hasta 10MB cada una</div>
                 <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={onFiles} />
               </div>
@@ -229,7 +384,7 @@ export default function Admin() {
               {form.imagenes.length > 0 && (
                 <div className="grid md:grid-cols-4 gap-3">
                   {form.imagenes.map((f, i) => (
-                    <div key={i} className="border rounded-xl p-3 text-sm">
+                    <div key={i} className="border rounded-xl p-3 text-sm bg-white">
                       <div className="truncate">{f.name}</div>
                       <div className="text-gray-500">{(f.size / 1024 / 1024).toFixed(2)} MB</div>
                     </div>
@@ -242,9 +397,15 @@ export default function Admin() {
 
         {/* acciones */}
         <div className="mt-4 flex items-center justify-end gap-3">
-          <a href="/propiedades" className="btn btn-ghost">Cancelar</a>
-          <button className="btn btn-primary">
-            <Check className="w-4 h-4" /> Crear Propiedad
+          <a href="/propiedades" className="btn btn-ghost">
+            Cancelar
+          </a>
+          <button
+            className="btn btn-primary disabled:opacity-60"
+            onClick={handleCreate}
+            disabled={creating}
+          >
+            {creating ? 'Creando…' : (<><Check className="w-4 h-4" /> Crear Propiedad</>)}
           </button>
         </div>
       </div>
@@ -252,29 +413,50 @@ export default function Admin() {
   )
 }
 
-/* ---------- componentes auxiliares ---------- */
+/* ---------- auxiliares ---------- */
 
-function Field({ icon, label, children }: { icon?: React.ReactNode, label: string, children: React.ReactNode }) {
+function Field({
+  icon,
+  label,
+  children,
+}: {
+  icon?: React.ReactNode
+  label: string
+  children: React.ReactNode
+}) {
   return (
     <div>
       <label className="block text-sm font-medium mb-1">{label}</label>
       <div className="relative">
         {icon && <span className="absolute left-3 top-1/2 -translate-y-1/2">{icon}</span>}
-        <div className={icon ? 'pl-8' : ''}>
-          {children}
-        </div>
+        <div className={icon ? 'pl-8' : ''}>{children}</div>
       </div>
     </div>
   )
 }
 
 function Feature({
-  icon, label, checked, onChange,
-}: { icon: React.ReactNode, label: string, checked: boolean, onChange: (v: boolean) => void }) {
+  icon,
+  label,
+  checked,
+  onChange,
+}: {
+  icon: React.ReactNode
+  label: string
+  checked: boolean
+  onChange: (v: boolean) => void
+}) {
   return (
-    <label className={`flex items-center gap-3 border rounded-xl px-4 py-3 bg-white cursor-pointer
-      ${checked ? 'border-brand-500 ring-2 ring-brand-500/40' : 'border-gray-200 hover:border-gray-300'}`}>
-      <input type="checkbox" className="accent-brand-600" checked={checked} onChange={e => onChange(e.target.checked)} />
+    <label
+      className={`flex items-center gap-3 border rounded-xl px-4 py-3 bg-white cursor-pointer
+      ${checked ? 'border-brand-500 ring-2 ring-brand-500/40' : 'border-gray-200 hover:border-gray-300'}`}
+    >
+      <input
+        type="checkbox"
+        className="accent-brand-600"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
       <span className="inline-flex items-center gap-2">
         <span className="text-brand-700">{icon}</span>
         <span>{label}</span>
