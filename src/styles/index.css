@@ -15,15 +15,10 @@
 .badge { @apply inline-flex items-center gap-2 text-xs md:text-sm bg-white/15 rounded-full px-3 py-1; }
 .badge-inv { @apply inline-flex items-center gap-2 text-xs bg-white text-brand-600 rounded-full px-2 py-0.5 font-semibold; }
 
-/* === Estilos base para formularios (bordes/líneas) === */
+/* === Estilos base de formularios (bordes/líneas) === */
 @layer base {
-  /* inputs comunes */
-  input[type="text"],
-  input[type="email"],
-  input[type="tel"],
-  input[type="number"],
-  input[type="search"],
-  input[type="url"],
+  /* aplica a todos los inputs “de texto”, aunque no tengan atributo type */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
   select,
   textarea {
     @apply w-full bg-white text-gray-800 placeholder-gray-400
@@ -31,18 +26,15 @@
            px-3 py-2 outline-none ring-0
            transition-colors duration-150;
   }
+
   /* foco consistente */
-  input[type="text"]:focus,
-  input[type="email"]:focus,
-  input[type="tel"]:focus,
-  input[type="number"]:focus,
-  input[type="search"]:focus,
-  input[type="url"]:focus,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus,
   select:focus,
   textarea:focus {
     @apply border-brand-500 ring-2 ring-brand-500;
   }
-  /* deshabilitados */
+
+  /* disabled */
   input:disabled,
   select:disabled,
   textarea:disabled {
