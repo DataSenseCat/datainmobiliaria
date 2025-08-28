@@ -2,11 +2,11 @@ import {
   CheckCircle2, Clock, FileText, MessageCircle, Mail, Phone,
   Building2, Home, Star
 } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react';
 import { SITE } from '../shared/SiteConfig'
 
 export default function TasacionesPage() {
-  useEffect(() => { console.log('TASACIONES_PAGE 🟢 render'); }, [])
+  
   const formRef = useRef<HTMLDivElement>(null)
   const goForm = () => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 

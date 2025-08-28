@@ -2,12 +2,11 @@ import {
   Trophy, ShieldCheck, Sparkles, Building2, Home, Users2, Hammer, Scale, CheckCircle2,
   Quote, Star, BriefcaseBusiness, ClipboardList
 } from 'lucide-react'
-import { useEffect } from 'react'
+
 import { SITE } from '../shared/SiteConfig'
 
 export default function EmpresaPage() {
-  useEffect(() => { console.log('EMPRESA_PAGE 🔵 render'); }, [])
-
+  
   return (
     <div className="w-full">
       {/* HERO azul centrado (pill + 3 badges + 2 botones) */}
