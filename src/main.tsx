@@ -7,8 +7,8 @@ import Home from './pages/Home'
 import Detail from './pages/Detail'
 import Admin from './pages/Admin'
 import Login from './pages/Login'
-import Empresa from './pages/Empresa'
-import Tasaciones from './pages/Tasaciones'
+import EmpresaPage from './pages/EmpresaPage.tsx'
+import TasacionesPage from './pages/TasacionesPage.tsx'
 import Contacto from './pages/Contacto'
 import Emprendimientos from './pages/Emprendimientos'
 
@@ -21,8 +21,9 @@ const router = createBrowserRouter([
       { path: 'propiedades', element: <Home/> },          // listado reutiliza Home
       { path: 'propiedad/:id', element: <Detail/> },
       { path: 'emprendimientos', element: <Emprendimientos/> },
-      { path: 'tasaciones', element: <Tasaciones/> },
-     { path: 'empresa', element: <Empresa/> },
+      { path: 'tasaciones', element: <TasacionesPage /> },
+      { path: 'empresa', element: <EmpresaPage /> },
+      { path: 'la-empresa', element: <EmpresaPage /> }, // alias por si alguien navega así
       { path: 'contacto', element: <Contacto/> },
       { path: 'admin', element: <Admin/> },
       { path: 'login', element: <Login/> },
