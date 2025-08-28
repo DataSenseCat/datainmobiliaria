@@ -1,74 +1,118 @@
-import { useEffect, useState } from 'react'
-import { fetchProperties } from '../lib/api'
-import type { Property } from '../types'
-import HeroSearch from '../components/HeroSearch'
-import PropertyCard from '../components/PropertyCard'
-import Filters from '../components/Filters'
+// src/pages/Home.tsx
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import PropertyCard, { normalize } from '../components/PropertyCard'
 
-export default function Home(){
-  const [items, setItems] = useState<Property[]>([])
+type Raw = Record<string, any>
+
+export default function Home() {
+  const [items, setItems] = useState<Raw[]>([])
   const [loading, setLoading] = useState(true)
-  const [showAdvanced, setShowAdvanced] = useState(false)
 
-  const load = async (q:Record<string,string>={})=>{
-    setLoading(true)
-    const data = await fetchProperties(q)
-    setItems(Array.isArray(data)? data : [])
-    setLoading(false)
-  }
-  useEffect(()=>{ load() },[])
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const r = await fetch('/api/properties', { cache: 'no-store' })
+        const data = await r.json()
+        if (!cancelled) setItems(Array.isArray(data) ? data : [])
+      } catch {
+        if (!cancelled) setItems([])
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [])
+
+  const featured = useMemo(() => {
+    const arr = items.filter((x) => truthy(x.destacada))
+    if (arr.length) return arr
+    // fallback si no hay destacadas: muestra las primeras
+    return items.slice(0, 6)
+  }, [items])
 
   return (
-    <div>
-      <HeroSearch onSearch={load}/>
-      {/* Búsqueda avanzada */}
-      <div id="avanzada" className="container -mt-10 relative z-10">
-        <div className="text-right mb-2">
-          <button className="text-sm underline" onClick={()=>setShowAdvanced(v=>!v)}>
-            {showAdvanced? 'Ocultar búsqueda avanzada' : 'Mostrar búsqueda avanzada'}
-          </button>
+    <div className="container py-10">
+      {/* Hero muy simple (opcional) */}
+      <header className="text-center mb-10">
+        <h1 className="text-3xl md:text-4xl font-bold">Propiedades Destacadas</h1>
+        <p className="text-gray-600 mt-2">
+          Descubre nuestra selección de propiedades destacadas en las mejores ubicaciones de Catamarca
+        </p>
+      </header>
+
+      {/* Grid de propiedades */}
+      {loading ? (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
         </div>
-        {showAdvanced && <Filters onChange={load}/>}
+      ) : featured.length ? (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {featured.map((raw) => (
+            <PropertyCard key={String(raw.id ?? raw.ID)} item={raw} />
+          ))}
+        </div>
+      ) : (
+        <EmptyState />
+      )}
+
+      {/* CTA inferior */}
+      <div className="mt-10 flex justify-center">
+        <Link to="/propiedades" className="btn btn-primary">
+          Ver Todas las Propiedades
+        </Link>
       </div>
-
-      {/* Destacadas */}
-      <section className="container py-10">
-        <h2 className="text-2xl font-bold text-center mb-1">Propiedades Destacadas</h2>
-        <p className="text-center text-gray-600 mb-6">Descubre nuestra selección de propiedades en las mejores ubicaciones de Catamarca</p>
-        {loading ? <p className="text-center">Cargando...</p> : (
-          <div className="grid md:grid-cols-3 gap-4">
-            {items.slice(0,6).map(p => <PropertyCard key={p.id} p={p} />)}
-          </div>
-        )}
-        <div className="text-center mt-6">
-          <a className="btn btn-primary" href="/propiedades">Ver Todas las Propiedades</a>
-        </div>
-      </section>
-
-      {/* ¿Por qué elegirnos? */}
-      <section className="border-t bg-gray-50 py-12">
-        <div className="container grid md:grid-cols-2 gap-8 items-center">
-          <div>
-            <h3 className="text-xl font-semibold mb-3">¿Por qué elegir Inmobiliaria Catamarca?</h3>
-            <ul className="space-y-2 text-gray-700">
-              <li>• Más de 15 años de experiencia en el mercado catamarqueño.</li>
-              <li>• Atención personalizada en cada etapa.</li>
-              <li>• Tasaciones gratuitas y análisis de mercado.</li>
-            </ul>
-            <a href="/empresa" className="btn mt-4">Conoce Más Sobre Nosotros</a>
-          </div>
-          <div className="h-56 md:h-72 bg-white card flex items-center justify-center text-gray-400">
-            Imagen de la empresa
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="container py-12 text-center">
-        <h3 className="text-xl font-semibold mb-2">¿Tenés un proyecto inmobiliario?</h3>
-        <p className="text-gray-600 mb-4">Si sos desarrollador o tenés un proyecto, te ayudamos con la comercialización.</p>
-        <a href="/contacto" className="btn btn-primary">Contactar para Comercialización</a>
-      </section>
     </div>
   )
 }
+
+/* ================== auxiliares ================== */
+
+function truthy(v: any) {
+  if (typeof v === 'boolean') return v
+  const s = String(v ?? '').toLowerCase()
+  return s === 'true' || s === '1' || s === 'sí' || s === 'si' || s === 'x'
+}
+
+function SkeletonCard() {
+  return (
+    <div className="card overflow-hidden p-0">
+      <div className="w-full h-48 bg-gray-200 animate-pulse" />
+      <div className="p-3">
+        <div className="h-3 bg-gray-200 rounded w-1/3 mb-2" />
+        <div className="h-4 bg-gray-200 rounded w-3/4 mb-3" />
+        <div className="flex gap-2 mb-4">
+          <div className="h-5 bg-gray-200 rounded w-20" />
+          <div className="h-5 bg-gray-200 rounded w-16" />
+          <div className="h-5 bg-gray-200 rounded w-14" />
+        </div>
+        <div className="flex justify-between">
+          <div className="h-9 bg-gray-200 rounded w-28" />
+          <div className="h-9 bg-gray-200 rounded w-28" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function EmptyState() {
+  return (
+    <div className="card text-center py-12">
+      <h3 className="text-lg font-semibold">No encontramos propiedades para mostrar</h3>
+      <p className="text-gray-600 mt-1">
+        Probá nuevamente más tarde o contáctanos para recibir recomendaciones personalizadas.
+      </p>
+      <div className="mt-4 flex justify-center gap-3">
+        <Link to="/contacto" className="btn btn-primary">Contactar Asesor</Link>
+        <Link to="/tasaciones" className="btn btn-ghost">Tasación Gratuita</Link>
+      </div>
+    </div>
+  )
+}
+
