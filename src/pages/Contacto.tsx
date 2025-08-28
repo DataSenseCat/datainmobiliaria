@@ -5,21 +5,20 @@ import { SITE } from '../shared/SiteConfig'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 
-/** Icono default de Leaflet corregido para bundlers */
+/** Icono default Leaflet (evita marker invisible en bundlers) */
 const markerIcon = new L.Icon({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
+  iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41],
 })
 
 export default function Contacto() {
-  // puntos simulados alrededor del centro (podés ajustar)
+  const topRef = useRef<HTMLDivElement>(null)
+
+  // puntos simulados alrededor del centro (ajusta si querés)
   const center = useMemo(() => ({ lat: -28.468, lng: -65.779 }), [])
   const points = useMemo(() => ([
     { id: 'oficina',  pos: center, label: 'Oficina Central' },
@@ -30,42 +29,74 @@ export default function Contacto() {
   ]), [center])
 
   return (
-    <div className="w-full">
-      {/* Encabezado + badges */}
-      <section className="container py-8">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold">Contactános</h1>
-            <p className="text-gray-600">¿Tenés alguna consulta? Elegí el canal que prefieras y te respondemos a la brevedad.</p>
-          </div>
-          <div className="hidden md:flex items-center gap-2">
-            <Badge icon={<Clock className="w-4 h-4" />} text="Respuesta rápida" />
-            <Badge icon={<Users2 className="w-4 h-4" />} text="Atención personalizada" />
-            <Badge icon={<Building2 className="w-4 h-4" />} text="Asesoramiento gratuito" />
-          </div>
+    <div className="w-full" ref={topRef}>
+      {/* ===== Encabezado (igual que inmobiliaria1) ===== */}
+      <section className="container pt-10 text-center">
+        <h1 className="text-3xl md:text-4xl font-bold">Contactános</h1>
+        <p className="text-gray-600 max-w-3xl mx-auto mt-2">
+          ¿Tenés alguna consulta? Nos encantaría ayudarte. Contactanos a través de cualquiera de
+          nuestros canales de comunicación y te responderemos a la brevedad.
+        </p>
+
+        {/* Chips de color */}
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+          <Chip className="bg-green-100 text-green-700">
+            <Clock className="w-4 h-4" /> Respuesta rápida
+          </Chip>
+          <Chip className="bg-blue-100 text-blue-700">
+            <Users2 className="w-4 h-4" /> Atención personalizada
+          </Chip>
+          <Chip className="bg-violet-100 text-violet-700">
+            <Building2 className="w-4 h-4" /> Asesoramiento gratuito
+          </Chip>
         </div>
       </section>
 
-      {/* Formas de contacto (tarjetas) */}
-      <section className="container">
-        <h2 className="font-semibold mb-3">Formas de Contacto</h2>
-        <div className="grid md:grid-cols-4 gap-4">
-          <ContactCard icon={<Phone className="w-5 h-5" />} title="Teléfono" desc="Lunes a viernes de 9 a 18h">
-            <a href={`tel:${SITE.phone}`} className="btn btn-outline w-full">Llamar</a>
-          </ContactCard>
-          <ContactCard icon={<MessageCircle className="w-5 h-5" />} title="WhatsApp" desc="Respuesta inmediata">
-            <a href={`https://wa.me/${SITE.whatsapp.replace(/\D/g,'')}`} target="_blank" className="btn btn-outline w-full" rel="noreferrer">Chatear</a>
-          </ContactCard>
-          <ContactCard icon={<Mail className="w-5 h-5" />} title="Email" desc="Respondemos en 24h">
-            <a href={`mailto:${SITE.email}`} className="btn btn-outline w-full">Escribir</a>
-          </ContactCard>
-          <ContactCard icon={<MapPin className="w-5 h-5" />} title="Oficina" desc={SITE.location}>
-            <a href="#mapa" className="btn btn-outline w-full">Ver Mapa</a>
-          </ContactCard>
+      {/* Separador fino como en la referencia */}
+      <div className="border-t mt-6" />
+
+      {/* ===== Formas de Contacto (centrado, icono arriba, botón primario) ===== */}
+      <section className="container py-6">
+        <h2 className="text-xl md:text-2xl font-semibold text-center mb-6">Formas de Contacto</h2>
+
+        <div className="grid md:grid-cols-4 gap-6">
+          <ContactTile
+            icon={<Phone className="w-6 h-6 text-emerald-600" />}
+            title="Teléfono"
+            line1={SITE.phone}
+            line2="Lunes a Viernes de 9 a 18hs"
+            href={`tel:${SITE.phone}`}
+            cta="Llamar"
+          />
+          <ContactTile
+            icon={<MessageCircle className="w-6 h-6 text-emerald-600" />}
+            title="WhatsApp"
+            line1={SITE.whatsapp}
+            line2="Respuesta inmediata"
+            href={`https://wa.me/${SITE.whatsapp.replace(/\D/g, '')}`}
+            cta="Chatear"
+            targetBlank
+          />
+          <ContactTile
+            icon={<Mail className="w-6 h-6 text-blue-600" />}
+            title="Email"
+            line1={SITE.email}
+            line2="Respuesta en 24hs"
+            href={`mailto:${SITE.email}`}
+            cta="Escribir"
+          />
+          <ContactTile
+            icon={<MapPin className="w-6 h-6 text-violet-600" />}
+            title="Oficina"
+            line1="Av. República 123"
+            line2="San Fernando del Valle de Catamarca"
+            href="#mapa"
+            cta="Ver Mapa"
+          />
         </div>
       </section>
 
-      {/* Form + info oficina */}
+      {/* ===== Formulario + Información Oficina ===== */}
       <section className="container py-8">
         <div className="grid md:grid-cols-3 gap-6">
           {/* Formulario */}
@@ -75,14 +106,6 @@ export default function Contacto() {
               <input placeholder="Nombre completo *" required />
               <input placeholder="Email *" type="email" required />
               <input placeholder="Teléfono (opcional)" />
-              <div className="flex items-center gap-3 text-sm text-gray-600">
-                <span>¿Cómo preferís que te contactemos?</span>
-              </div>
-              <div className="col-span-2 flex flex-wrap gap-3">
-                <label className="inline-flex items-center gap-2 text-sm"><input type="radio" name="pref" defaultChecked /> Teléfono</label>
-                <label className="inline-flex items-center gap-2 text-sm"><input type="radio" name="pref" /> Email</label>
-                <label className="inline-flex items-center gap-2 text-sm"><input type="radio" name="pref" /> WhatsApp</label>
-              </div>
               <select className="col-span-2" defaultValue="">
                 <option value="" disabled>Seleccionar asunto</option>
                 <option>Comprar propiedad</option>
@@ -96,7 +119,7 @@ export default function Contacto() {
             </div>
           </form>
 
-          {/* Información oficina + departamentos */}
+          {/* Info oficina + departamentos */}
           <aside className="card p-5">
             <h3 className="font-semibold mb-3">Información de la Oficina</h3>
             <div className="space-y-2 text-sm text-gray-700">
@@ -124,15 +147,12 @@ export default function Contacto() {
         </div>
       </section>
 
-      {/* Mapa */}
+      {/* ===== Mapa ===== */}
       <section className="container" id="mapa">
         <h3 className="font-semibold mb-3">Nuestra Ubicación</h3>
         <div className="card overflow-hidden">
           <MapContainer center={center} zoom={14} style={{ height: 420, width: '100%' }}>
-            <TileLayer
-              attribution='&copy; OpenStreetMap'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
+            <TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
             {points.map(p => (
               <Marker key={p.id} position={p.pos} icon={markerIcon}>
                 <Popup>{p.label}</Popup>
@@ -142,23 +162,23 @@ export default function Contacto() {
         </div>
       </section>
 
-      {/* FAQ */}
+      {/* ===== FAQ ===== */}
       <section className="container py-10">
         <h3 className="text-xl font-semibold text-center mb-6">Preguntas Frecuentes</h3>
         <div className="max-w-3xl mx-auto space-y-3">
-          <FAQ q="¿Cuál es el horario de atención?" a="Atendemos de lunes a viernes de 9:00 a 18:00 y sábados de 9:00 a 13:00. Por WhatsApp respondemos las 24 horas." />
-          <FAQ q="¿Hacen tasaciones gratuitas?" a="Sí, nuestras tasaciones son completamente gratuitas y sin compromiso." />
-          <FAQ q="¿Qué zonas operan?" a="Principalmente en San Fernando del Valle de Catamarca y alrededores, pero trabajamos en toda la provincia." />
-          <FAQ q="¿Cómo puedo publicar mi propiedad?" a="Podés contactarnos por cualquier medio y prepararíamos una visita para valorar y publicar tu propiedad." />
+          <FAQ q="¿Cuál es el horario de atención?" a="Lunes a viernes de 9:00 a 18:00 y sábados de 9:00 a 13:00. Por WhatsApp respondemos las 24 hs." />
+          <FAQ q="¿Hacen tasaciones gratuitas?" a="Sí, completamente gratuitas y sin compromiso." />
+          <FAQ q="¿Qué zonas operan?" a="Principalmente SFV de Catamarca y alrededores, pero trabajamos en toda la provincia." />
+          <FAQ q="¿Cómo publico mi propiedad?" a="Contactanos; coordinamos una visita para valorar y publicar la propiedad." />
         </div>
       </section>
 
-      {/* CTA naranja */}
+      {/* ===== CTA naranja ===== */}
       <section className="bg-orange-600 text-white">
         <div className="container py-8 grid md:grid-cols-2 gap-4 items-center">
           <div>
             <h3 className="text-xl font-semibold">¿Necesitás atención fuera del horario comercial?</h3>
-            <p className="opacity-95">Para urgencias o administración, escribinos por WhatsApp. Respondemos 24 hs.</p>
+            <p className="opacity-95">Para urgencias y administración, escribinos por WhatsApp. Respondemos 24 hs.</p>
           </div>
           <div className="md:text-right">
             <a
@@ -174,28 +194,34 @@ export default function Contacto() {
   )
 }
 
-/* --------- componentes pequeños con el mismo “feel” que en Tasaciones --------- */
+/* ------------------- componentes pequeños ------------------- */
 
-function Badge({ icon, text }:{icon:React.ReactNode,text:string}) {
+function Chip({ className, children }:{className?:string, children:React.ReactNode}) {
   return (
-    <div className="flex items-center gap-2 text-xs bg-gray-100 rounded-full px-3 py-1">
-      <span className="text-brand-700">{icon}</span>
-      <span className="font-medium">{text}</span>
-    </div>
+    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${className}`}>{children}</span>
   )
 }
 
-function ContactCard({ icon, title, desc, children }:{
-  icon:React.ReactNode, title:string, desc:string, children:React.ReactNode
+function ContactTile({
+  icon, title, line1, line2, href, cta, targetBlank
+}:{
+  icon:React.ReactNode, title:string, line1:string, line2:string, href:string, cta:string, targetBlank?:boolean
 }) {
   return (
-    <div className="card p-4 hover:border-gray-300">
-      <div className="flex items-center gap-2 mb-1 text-gray-800">
-        <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">{icon}</div>
-        <div className="font-semibold">{title}</div>
+    <div className="card p-6 text-center hover:border-gray-300">
+      <div className="w-10 h-10 rounded-full mx-auto flex items-center justify-center bg-gray-50 mb-2">
+        {icon}
       </div>
-      <p className="text-sm text-gray-600 mb-3">{desc}</p>
-      {children}
+      <div className="font-semibold">{title}</div>
+      <div className="text-gray-900 mt-1">{line1}</div>
+      <div className="text-gray-500 text-sm">{line2}</div>
+      <a
+        href={href}
+        className="btn btn-primary w-full mt-4"
+        {...(targetBlank ? { target: '_blank', rel: 'noreferrer' } : {})}
+      >
+        {cta}
+      </a>
     </div>
   )
 }
