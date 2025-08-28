@@ -21,9 +21,9 @@ const router = createBrowserRouter([
       { path: 'propiedades', element: <Home/> },          // listado reutiliza Home
       { path: 'propiedad/:id', element: <Detail/> },
       { path: 'emprendimientos', element: <Emprendimientos/> },
-      { path: 'tasaciones', element: <TasacionesPage /> },
-      { path: 'empresa', element: <EmpresaPage /> },
-      { path: 'la-empresa', element: <EmpresaPage /> }, // alias por si alguien navega así
+      { path: 'tasaciones', element: <TasacionesPage/> },
+      { path: 'empresa', element: <EmpresaPage/> },
+      { path: 'la-empresa', element: <EmpresaPage/> }, // alias por si alguien navega así
       { path: 'contacto', element: <Contacto/> },
       { path: 'admin', element: <Admin/> },
       { path: 'login', element: <Login/> },
