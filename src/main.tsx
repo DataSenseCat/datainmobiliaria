@@ -18,6 +18,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import AdminList from './pages/AdminList'
 import Admin from './pages/Admin'
 import AdminEdit from './pages/AdminEdit'
+import Emprendimientos from './pages/Emprendimientos'
 
 const router = createBrowserRouter([
   {
@@ -27,7 +28,7 @@ const router = createBrowserRouter([
       { index: true, element: <Home /> },
       { path: 'propiedades', element: <Propiedades /> },
       { path: 'propiedad/:id', element: <Detail /> },
-      { path: 'emprendimientos', element: <div className="container py-10">Próximamente</div> },
+      { path: 'emprendimientos', element: <Emprendimientos /> },
       { path: 'tasaciones', element: <TasacionesPage /> },
       { path: 'empresa', element: <EmpresaPage /> },
       { path: 'contacto', element: <Contacto /> },
