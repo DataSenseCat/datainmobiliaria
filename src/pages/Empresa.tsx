@@ -1,16 +1,16 @@
 import {
   Trophy, ShieldCheck, Sparkles, Building2, Home, Users2, Hammer, Scale, CheckCircle2,
-  Quote, Star, Mail, Phone, MapPin
+  Quote, Star
 } from 'lucide-react'
 import { SITE } from '../shared/SiteConfig'
 
 export default function Empresa() {
   return (
     <div className="w-full">
-      {/* ========= HERO AZUL CENTRADO (como inmobiliaria1) ========= */}
+      {/* ===== HERO AZUL CENTRADO (igual que inmobiliaria1) ===== */}
       <section className="bg-brand-600 text-white">
         <div className="container py-12 text-center">
-          {/* pill */}
+          {/* pill superior */}
           <div className="inline-flex items-center gap-2 text-xs md:text-sm bg-white/15 rounded-full px-3 py-1 mb-3">
             <span className="bg-white text-brand-600 px-2 py-0.5 rounded-full font-semibold">Desde 2008</span>
             <span className="opacity-90">más de 15 años de experiencia</span>
@@ -18,16 +18,18 @@ export default function Empresa() {
 
           <h1 className="text-3xl md:text-4xl font-bold">Inmobiliaria Catamarca</h1>
           <p className="opacity-90 mt-2 max-w-3xl mx-auto">
-            Líderes en el mercado inmobiliario catamarqueño: experiencia, cercanía y resultados para conectar personas con su próximo hogar o inversión.
+            Líderes en el mercado inmobiliario catamarqueño: experiencia, cercanía y resultados para conectar personas
+            con su próximo hogar o inversión.
           </p>
 
-          {/* badges */}
+          {/* badges dentro del hero */}
           <div className="mt-6 grid md:grid-cols-3 gap-3 max-w-4xl mx-auto">
             <HeroBadge icon={<Trophy className="w-5 h-5" />} title="2,500+ operaciones" desc="ventas y alquileres concretados" />
             <HeroBadge icon={<ShieldCheck className="w-5 h-5" />} title="98% satisfacción" desc="de nuestros clientes" />
             <HeroBadge icon={<Sparkles className="w-5 h-5" />} title="Equipo profesional" desc="tasadores y agentes certificados" />
           </div>
 
+          {/* botones del hero */}
           <div className="mt-6 flex items-center justify-center gap-3">
             <a href="/contacto" className="btn bg-white text-brand-700 hover:bg-white/90">Contactar Ahora</a>
             <a href={`mailto:${SITE.email}`} className="btn btn-outline border-white text-white hover:bg-white/10">Escribir</a>
@@ -35,7 +37,7 @@ export default function Empresa() {
         </div>
       </section>
 
-      {/* ========= Misión / Visión / Valores (cards con hover) ========= */}
+      {/* ===== Misión / Visión / Valores (tarjetas “pastilla”) ===== */}
       <section className="container -mt-6 relative z-10 grid md:grid-cols-3 gap-6">
         <InfoCard title="Nuestra Misión" icon={<Sparkles className="w-5 h-5 text-brand-700" />}>
           Ser el puente que conecta a las personas con sus sueños inmobiliarios, brindando un servicio integral y transparente.
@@ -48,17 +50,18 @@ export default function Empresa() {
         </InfoCard>
       </section>
 
-      {/* ========= Estadísticas + Servicios ========= */}
-      <section className="container py-10">
-        {/* stats */}
-        <div className="grid md:grid-cols-4 gap-4 mb-8">
+      {/* ===== Estadísticas ===== */}
+      <section className="container py-8">
+        <div className="grid md:grid-cols-4 gap-4">
           <Stat number="15+" label="Años de experiencia" />
           <Stat number="2,500+" label="Propiedades vendidas" />
           <Stat number="5,000+" label="Clientes satisfechos" />
           <Stat number="98%" label="Satisfacción" />
         </div>
+      </section>
 
-        {/* servicios */}
+      {/* ===== Nuestros Servicios (grilla igual a inmobiliaria1) ===== */}
+      <section className="container pb-8">
         <h3 className="text-xl font-semibold mb-4">Nuestros Servicios</h3>
         <div className="grid md:grid-cols-3 gap-4">
           <ServiceCard icon={<Home className="w-5 h-5" />} title="Venta de Propiedades"
@@ -76,8 +79,8 @@ export default function Empresa() {
         </div>
       </section>
 
-      {/* ========= Equipo ========= */}
-      <section className="container pb-10">
+      {/* ===== Equipo ===== */}
+      <section className="container pb-8">
         <h3 className="text-xl font-semibold mb-4">Nuestro Equipo</h3>
         <div className="grid md:grid-cols-4 gap-4">
           <TeamCard name="Roberto Fernández" role="Martillero Público" desc="Especialista en ventas y negociación." />
@@ -87,23 +90,17 @@ export default function Empresa() {
         </div>
       </section>
 
-      {/* ========= Testimonios ========= */}
-      <section className="container pb-10">
+      {/* ===== Testimonios (burbuja con estrellas) ===== */}
+      <section className="container pb-8">
         <h3 className="text-xl font-semibold mb-4">Lo que dicen nuestros clientes</h3>
         <div className="grid md:grid-cols-3 gap-4">
-          <Testimonial
-            text="Vendieron mi casa en tiempo récord y al precio acordado. Muy profesionales."
-            author="Juan Pérez" role="Barrio Norte" />
-          <Testimonial
-            text="Me ayudaron a encontrar la inversión perfecta. Atención personalizada."
-            author="Laura Martínez" role="Centro" />
-          <Testimonial
-            text="Excelentes, me acompañaron en cada paso de la compra."
-            author="Miguel Sánchez" role="Villa Cubas" />
+          <Testimonial text="Vendieron mi casa en tiempo récord y al precio acordado. Muy profesionales." author="Juan Pérez" role="Barrio Norte" />
+          <Testimonial text="Me ayudaron a encontrar la inversión perfecta. Atención personalizada." author="Laura Martínez" role="Centro" />
+          <Testimonial text="Excelentes, me acompañaron en cada paso de la compra." author="Miguel Sánchez" role="Villa Cubas" />
         </div>
       </section>
 
-      {/* ========= Certificaciones ========= */}
+      {/* ===== Certificaciones ===== */}
       <section className="container pb-12">
         <h3 className="text-xl font-semibold mb-4">Certificaciones y Membresías</h3>
         <div className="grid md:grid-cols-4 gap-4">
@@ -114,14 +111,12 @@ export default function Empresa() {
         </div>
       </section>
 
-      {/* ========= CTA AZUL FINAL ========= */}
+      {/* ===== CTA FINAL AZUL (dos botones) ===== */}
       <section className="bg-brand-700 text-white">
         <div className="container py-10 grid md:grid-cols-2 gap-6 items-center">
           <div>
             <h3 className="text-xl md:text-2xl font-semibold">¿Listo para tu próxima operación inmobiliaria?</h3>
-            <p className="opacity-95 mt-1">
-              Nuestro equipo está preparado para ayudarte a alcanzar tus objetivos.
-            </p>
+            <p className="opacity-95 mt-1">Nuestro equipo está preparado para ayudarte a alcanzar tus objetivos.</p>
           </div>
           <div className="flex md:justify-end gap-3">
             <a href="/contacto" className="btn bg-white text-brand-700 hover:bg-white/90">Contactar Ahora</a>
@@ -133,7 +128,7 @@ export default function Empresa() {
   )
 }
 
-/* ================== componentes con el mismo “feel” que en Tasaciones ================== */
+/* ===== componentes con el mismo “feel” que en inmobiliaria1 ===== */
 
 function HeroBadge({ icon, title, desc }:{icon:React.ReactNode,title:string,desc:string}) {
   return (
@@ -218,3 +213,4 @@ function Cert({ label }:{label:string}) {
     </div>
   )
 }
+
