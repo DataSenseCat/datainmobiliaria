@@ -1,30 +1,35 @@
-// src/pages/Admin.tsx
 import { useRef, useState } from 'react'
-import {
-  ArrowLeft,
-  Check,
-  Home,
-  Bath,
-  Ruler,
-  Car,
-  Waves,
-  CookingPot,
-  BadgeDollarSign,
-  ImagePlus,
-  HousePlus,
-  Building2,
-  ChevronDown,
-} from 'lucide-react'
+import { BedDouble, Bath, Ruler, ImagePlus, UploadCloud, Trash2, Info, CheckCircle2 } from 'lucide-react'
 
 type Tab = 'basic' | 'details' | 'features' | 'pricing' | 'images'
 
+type FormState = {
+  titulo: string
+  ciudad: string
+  direccion: string
+  descripcion: string
+  tipo: string
+  operacion: string
+  destacada: boolean
+  activa: boolean
+  habitaciones: number
+  banos: number
+  m2_cubiertos: number
+  m2_totales: number
+  precio_usd: number
+  precio_ars: number
+  cochera: boolean
+  piscina: boolean
+  dpto_servicio: boolean
+  quincho: boolean
+  parrillero: boolean
+}
+
 export default function Admin() {
   const [tab, setTab] = useState<Tab>('basic')
-  const fileRef = useRef<HTMLInputElement>(null)
-  const [creating, setCreating] = useState(false)
 
-  // --- estado mínimo para inputs (adaptalo a tu store si ya tenés lógica propia) ---
-  const [form, setForm] = useState({
+  // --------- estado del formulario ----------
+  const [form, setForm] = useState<FormState>({
     titulo: '',
     ciudad: 'San Fernando del Valle de Catamarca',
     direccion: '',
@@ -33,442 +38,358 @@ export default function Admin() {
     operacion: 'Venta',
     destacada: false,
     activa: true,
-
-    habitaciones: '',
-    banos: '',
-    m2cubiertos: '',
-    m2totales: '',
-
-    usd: '',
-    ars: '',
-
-    features: {
-      cochera: false,
-      piscina: false,
-      dpto: false,
-      quincho: false,
-      parrillero: false,
-    },
-
-    imagenes: [] as File[],
+    habitaciones: 0,
+    banos: 0,
+    m2_cubiertos: 0,
+    m2_totales: 0,
+    precio_usd: 0,
+    precio_ars: 0,
+    cochera: false,
+    piscina: false,
+    dpto_servicio: false,
+    quincho: false,
+    parrillero: false,
   })
 
+  // --------- imágenes (privadas) ----------
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [localFiles, setLocalFiles] = useState<File[]>([])      // seleccionadas pero aún no subidas
+  const [imageIds, setImageIds] = useState<string[]>([])        // IDs de Drive subidas
+  const [uploading, setUploading] = useState(false)
+
+  const [creating, setCreating] = useState(false)
+  const [msg, setMsg] = useState<{type:'ok'|'err', text:string}|null>(null)
+
+  // ----------------- helpers -----------------
   const onPickImages = () => fileRef.current?.click()
+
   const onFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files ? Array.from(e.target.files) : []
-    setForm((f) => ({ ...f, imagenes: files }))
+    setLocalFiles(prev => [...prev, ...files])
+    e.target.value = '' // permite re-seleccionar los mismos archivos
   }
 
-  const tabCls = (active: boolean) =>
-    `px-4 py-2 rounded-xl text-sm border transition-all ${active
-      ? 'bg-white text-gray-900 border-gray-200 shadow-sm'
-      : 'bg-gray-100 text-gray-700 border-transparent hover:bg-gray-50'}`
+  async function uploadImages(files: File[]): Promise<string[]> {
+    if (!files.length) return []
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      files.forEach(f => fd.append('images', f))
+      const r = await fetch('/api/upload', { method: 'POST', body: fd })
+      if (!r.ok) {
+        const t = await safeText(r)
+        throw new Error(`Fallo subida (${r.status}): ${t}`)
+      }
+      const data = await r.json()
+      const ids = (data?.ids ?? []).map(String)
+      setImageIds(prev => [...prev, ...ids])
+      // ya no necesitamos conservar esos archivos locales
+      setLocalFiles([])
+      return ids
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  async function safeText(r: Response) {
+    try { return await r.text() } catch { return '' }
+  }
+
+  function toImageUrl(id: string) {
+    return id ? `/api/image?id=${encodeURIComponent(id)}` : '/img/placeholder-property.jpg'
+  }
+
+  function update<K extends keyof FormState>(k: K, v: FormState[K]) {
+    setForm(prev => ({ ...prev, [k]: v }))
+  }
 
   async function handleCreate() {
+    setMsg(null)
+    setCreating(true)
     try {
-      setCreating(true)
-
-      if (!form.titulo?.trim()) {
-        alert('Falta el título')
-        return
-      }
-      if (!form.ciudad?.trim()) {
-        alert('Falta la ciudad')
-        return
+      // Si hay archivos locales sin subir, los subimos primero
+      if (localFiles.length) {
+        await uploadImages(localFiles)
       }
 
       const payload = {
-        id: `prop_${Date.now()}`,
-        titulo: form.titulo,
-        ciudad: form.ciudad,
-        direccion: form.direccion,
-        descripcion: form.descripcion,
-        tipo: form.tipo, // Casa | Departamento | Lote | Local
-        operacion: form.operacion, // Venta | Alquiler
-        destacada: !!form.destacada,
-        activa: !!form.activa,
-
-        habitaciones: Number(form.habitaciones || 0),
-        banos: Number(form.banos || 0),
-        m2_cubiertos: Number(form.m2cubiertos || 0),
-        m2_totales: Number(form.m2totales || 0),
-
-        precio_usd: Number(form.usd || 0),
-        precio_ars: Number(form.ars || 0),
-
-        cochera: !!form.features.cochera,
-        piscina: !!form.features.piscina,
-        dpto_servicio: !!form.features.dpto,
-        quincho: !!form.features.quincho,
-        parrillero: !!form.features.parrillero,
-
-        imagenes: (form.imagenes || []).map((f) => f.name).join(', '),
+        ...form,
+        // guardamos como JSON de IDs (privados)
+        imagenes: JSON.stringify(imageIds),
       }
 
-      const resp = await fetch('/api/properties', {
+      const r = await fetch('/api/properties', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
 
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}))
-        throw new Error(err?.detail || err?.error || `Error ${resp.status}`)
+      if (!r.ok) {
+        const t = await safeText(r)
+        throw new Error(`No se pudo crear la propiedad: ${t}`)
       }
 
-      alert('¡Propiedad creada con éxito!')
-      // redirección de ejemplo (ajustá si tenés una lista específica)
-      window.location.href = '/admin'
+      setMsg({ type: 'ok', text: 'Propiedad creada correctamente.' })
+      // reset mínimos
+      setForm(prev => ({ ...prev, titulo: '', direccion: '', descripcion: '' }))
+      setLocalFiles([])
+      setImageIds([])
+      setTab('basic')
     } catch (e: any) {
-      console.error(e)
-      alert(`No se pudo crear la propiedad: ${e?.message || e}`)
+      setMsg({ type: 'err', text: e?.message || 'Error inesperado' })
     } finally {
       setCreating(false)
     }
   }
 
+  // ---------------- UI ----------------
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="container py-6">
-        {/* header */}
-        <div className="flex items-center gap-3 mb-4">
-          <a href="/propiedades" className="btn btn-ghost px-3">
-            <ArrowLeft className="w-4 h-4" /> Volver
-          </a>
-          <div>
-            <h1 className="text-2xl font-semibold leading-tight">Nueva Propiedad</h1>
-            <p className="text-gray-600">Completa la información de la nueva propiedad</p>
+    <div className="container py-6">
+      <div className="mb-4">
+        <h1 className="text-2xl font-semibold">Nueva Propiedad</h1>
+        <p className="text-gray-600">Completa la información de la nueva propiedad</p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-2 mb-4 overflow-x-auto">
+        <TabBtn active={tab==='basic'} onClick={()=>setTab('basic')}>Información Básica</TabBtn>
+        <TabBtn active={tab==='details'} onClick={()=>setTab('details')}>Detalles</TabBtn>
+        <TabBtn active={tab==='features'} onClick={()=>setTab('features')}>Características</TabBtn>
+        <TabBtn active={tab==='pricing'} onClick={()=>setTab('pricing')}>Precios</TabBtn>
+        <TabBtn active={tab==='images'} onClick={()=>setTab('images')}>Imágenes</TabBtn>
+      </div>
+
+      {/* Panels */}
+      {tab === 'basic' && (
+        <section className="card">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="label">Título *</label>
+              <input value={form.titulo} onChange={e=>update('titulo', e.target.value)} placeholder="Ej: Casa en Barrio Norte" />
+            </div>
+            <div>
+              <label className="label">Ciudad *</label>
+              <input value={form.ciudad} onChange={e=>update('ciudad', e.target.value)} placeholder="Ciudad" />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="label">Dirección</label>
+              <input value={form.direccion} onChange={e=>update('direccion', e.target.value)} placeholder="Dirección completa" />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="label">Descripción</label>
+              <textarea rows={4} value={form.descripcion} onChange={e=>update('descripcion', e.target.value)} placeholder="Descripción detallada de la propiedad..." />
+            </div>
+
+            <div>
+              <label className="label">Tipo de Propiedad *</label>
+              <select value={form.tipo} onChange={e=>update('tipo', e.target.value)}>
+                <option>Casa</option>
+                <option>Departamento</option>
+                <option>Lote</option>
+                <option>Local</option>
+                <option>Oficina</option>
+                <option>Campo</option>
+              </select>
+            </div>
+            <div>
+              <label className="label">Operación *</label>
+              <select value={form.operacion} onChange={e=>update('operacion', e.target.value)}>
+                <option>Venta</option>
+                <option>Alquiler</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input id="activa" type="checkbox" checked={form.activa} onChange={e=>update('activa', e.target.checked)} />
+              <label htmlFor="activa">Activa</label>
+            </div>
+            <div className="flex items-center gap-2">
+              <input id="destacada" type="checkbox" checked={form.destacada} onChange={e=>update('destacada', e.target.checked)} />
+              <label htmlFor="destacada">Destacada</label>
+            </div>
           </div>
-        </div>
+        </section>
+      )}
 
-        {/* tabs */}
-        <div className="flex items-center gap-2 mb-4">
-          <button className={tabCls(tab === 'basic')} onClick={() => setTab('basic')}>
-            Información Básica
-          </button>
-          <button className={tabCls(tab === 'details')} onClick={() => setTab('details')}>
-            Detalles
-          </button>
-          <button className={tabCls(tab === 'features')} onClick={() => setTab('features')}>
-            Características
-          </button>
-          <button className={tabCls(tab === 'pricing')} onClick={() => setTab('pricing')}>
-            Precios
-          </button>
-          <button className={tabCls(tab === 'images')} onClick={() => setTab('images')}>
-            Imágenes
-          </button>
-        </div>
+      {tab === 'details' && (
+        <section className="card">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="label flex items-center gap-2"><BedDouble className="w-4 h-4" /> Habitaciones</label>
+              <input type="number" min={0} value={form.habitaciones} onChange={e=>update('habitaciones', Number(e.target.value))} placeholder="Número de habitaciones" />
+            </div>
+            <div>
+              <label className="label flex items-center gap-2"><Bath className="w-4 h-4" /> Baños</label>
+              <input type="number" min={0} value={form.banos} onChange={e=>update('banos', Number(e.target.value))} placeholder="Número de baños" />
+            </div>
+            <div>
+              <label className="label flex items-center gap-2"><Ruler className="w-4 h-4" /> Superficie Cubierta (m²)</label>
+              <input type="number" min={0} value={form.m2_cubiertos} onChange={e=>update('m2_cubiertos', Number(e.target.value))} placeholder="Metros cuadrados cubiertos" />
+            </div>
+            <div>
+              <label className="label flex items-center gap-2"><Ruler className="w-4 h-4" /> Superficie Total (m²)</label>
+              <input type="number" min={0} value={form.m2_totales} onChange={e=>update('m2_totales', Number(e.target.value))} placeholder="Metros cuadrados totales" />
+            </div>
+          </div>
+        </section>
+      )}
 
-        {/* panel */}
-        <div className="card p-6">
-          {tab === 'basic' && (
-            <section className="space-y-6">
-              <h2 className="text-xl font-semibold">Información Básica</h2>
+      {tab === 'features' && (
+        <section className="card">
+          <div className="grid md:grid-cols-2 gap-4">
+            <Check label="Cochera" value={form.cochera} onChange={v=>update('cochera', v)} />
+            <Check label="Piscina" value={form.piscina} onChange={v=>update('piscina', v)} />
+            <Check label="Dpto. de Servicio" value={form.dpto_servicio} onChange={v=>update('dpto_servicio', v)} />
+            <Check label="Quincho" value={form.quincho} onChange={v=>update('quincho', v)} />
+            <Check label="Parrillero" value={form.parrillero} onChange={v=>update('parrillero', v)} />
+          </div>
+          <p className="text-xs text-gray-500 mt-3 flex items-start gap-2">
+            <Info className="w-4 h-4" />
+            Estas características se mostrarán como chips en la tarjeta y en el detalle.
+          </p>
+        </section>
+      )}
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Título *</label>
-                  <input
-                    type="text"
-                    placeholder="Ej: Casa en Barrio Norte"
-                    value={form.titulo}
-                    onChange={(e) => setForm({ ...form, titulo: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Ciudad *</label>
-                  <input
-                    type="text"
-                    placeholder="San Fernando del Valle de Catamarca"
-                    value={form.ciudad}
-                    onChange={(e) => setForm({ ...form, ciudad: e.target.value })}
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-1">Dirección</label>
-                  <input
-                    type="text"
-                    placeholder="Dirección completa"
-                    value={form.direccion}
-                    onChange={(e) => setForm({ ...form, direccion: e.target.value })}
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-1">Descripción</label>
-                  <textarea
-                    rows={4}
-                    placeholder="Descripción detallada de la propiedad..."
-                    value={form.descripcion}
-                    onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
-                  />
-                </div>
+      {tab === 'pricing' && (
+        <section className="card">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="label">Precio en USD</label>
+              <input type="number" min={0} value={form.precio_usd} onChange={e=>update('precio_usd', Number(e.target.value))} placeholder="Precio en dólares" />
+            </div>
+            <div>
+              <label className="label">Precio en ARS</label>
+              <input type="number" min={0} value={form.precio_ars} onChange={e=>update('precio_ars', Number(e.target.value))} placeholder="Precio en pesos" />
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 mt-3">
+            Podés especificar el precio en una o ambas monedas. Si no especificás, se mostrará "A consultar".
+          </p>
+        </section>
+      )}
 
-                <div>
-                  <label className="block text-sm font-medium mb-1">Tipo de Propiedad *</label>
-                  <div className="relative">
-                    <select
-                      value={form.tipo}
-                      onChange={(e) => setForm({ ...form, tipo: e.target.value })}
-                      className="pr-8"
-                    >
-                      <option>Casa</option>
-                      <option>Departamento</option>
-                      <option>Lote</option>
-                      <option>Local</option>
-                    </select>
-                    <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">Operación *</label>
-                  <div className="relative">
-                    <select
-                      value={form.operacion}
-                      onChange={(e) => setForm({ ...form, operacion: e.target.value })}
-                      className="pr-8"
-                    >
-                      <option>Venta</option>
-                      <option>Alquiler</option>
-                    </select>
-                    <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-6">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={form.destacada}
-                    onChange={(e) => setForm({ ...form, destacada: e.target.checked })}
-                  />
-                  Propiedad Destacada
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={form.activa}
-                    onChange={(e) => setForm({ ...form, activa: e.target.checked })}
-                  />
-                  Activa
-                </label>
-              </div>
-            </section>
-          )}
-
-          {tab === 'details' && (
-            <section className="space-y-6">
-              <h2 className="text-xl font-semibold">Detalles de la Propiedad</h2>
-              <div className="grid md:grid-cols-2 gap-4">
-                <Field icon={<HousePlus className="w-4 h-4 text-brand-600" />} label="Habitaciones">
-                  <input
-                    type="number"
-                    placeholder="Número de habitaciones"
-                    value={form.habitaciones}
-                    onChange={(e) => setForm({ ...form, habitaciones: e.target.value })}
-                  />
-                </Field>
-                <Field icon={<Bath className="w-4 h-4 text-brand-600" />} label="Baños">
-                  <input
-                    type="number"
-                    placeholder="Número de baños"
-                    value={form.banos}
-                    onChange={(e) => setForm({ ...form, banos: e.target.value })}
-                  />
-                </Field>
-                <Field icon={<Ruler className="w-4 h-4 text-brand-600" />} label="Superficie Cubierta (m²)">
-                  <input
-                    type="number"
-                    placeholder="Metros cuadrados cubiertos"
-                    value={form.m2cubiertos}
-                    onChange={(e) => setForm({ ...form, m2cubiertos: e.target.value })}
-                  />
-                </Field>
-                <Field icon={<Ruler className="w-4 h-4 text-brand-600" />} label="Superficie Total (m²)">
-                  <input
-                    type="number"
-                    placeholder="Metros cuadrados totales"
-                    value={form.m2totales}
-                    onChange={(e) => setForm({ ...form, m2totales: e.target.value })}
-                  />
-                </Field>
-              </div>
-            </section>
-          )}
-
-          {tab === 'features' && (
-            <section className="space-y-6">
-              <h2 className="text-xl font-semibold">Características Adicionales</h2>
-              <div className="grid md:grid-cols-3 gap-4">
-                <Feature
-                  checked={form.features.cochera}
-                  onChange={(v) => setForm({ ...form, features: { ...form.features, cochera: v } })}
-                  icon={<Car className="w-4 h-4" />}
-                  label="Cochera"
-                />
-                <Feature
-                  checked={form.features.piscina}
-                  onChange={(v) => setForm({ ...form, features: { ...form.features, piscina: v } })}
-                  icon={<Waves className="w-4 h-4" />}
-                  label="Piscina"
-                />
-                <Feature
-                  checked={form.features.dpto}
-                  onChange={(v) => setForm({ ...form, features: { ...form.features, dpto: v } })}
-                  icon={<Building2 className="w-4 h-4" />}
-                  label="Dpto. de Servicio"
-                />
-                <Feature
-                  checked={form.features.quincho}
-                  onChange={(v) => setForm({ ...form, features: { ...form.features, quincho: v } })}
-                  icon={<Home className="w-4 h-4" />}
-                  label="Quincho"
-                />
-                <Feature
-                  checked={form.features.parrillero}
-                  onChange={(v) => setForm({ ...form, features: { ...form.features, parrillero: v } })}
-                  icon={<CookingPot className="w-4 h-4" />}
-                  label="Parrillero"
-                />
-              </div>
-              <Note>
-                Seleccioná las características que posee la propiedad. Se mostrarán como badges en la tarjeta.
-              </Note>
-            </section>
-          )}
-
-          {tab === 'pricing' && (
-            <section className="space-y-6">
-              <h2 className="text-xl font-semibold">Precios</h2>
-              <div className="grid md:grid-cols-2 gap-4">
-                <Field icon={<BadgeDollarSign className="w-4 h-4 text-brand-600" />} label="Precio en USD">
-                  <input
-                    type="number"
-                    placeholder="Precio en dólares"
-                    value={form.usd}
-                    onChange={(e) => setForm({ ...form, usd: e.target.value })}
-                  />
-                </Field>
-                <Field icon={<BadgeDollarSign className="w-4 h-4 text-brand-600" />} label="Precio en ARS">
-                  <input
-                    type="number"
-                    placeholder="Precio en pesos"
-                    value={form.ars}
-                    onChange={(e) => setForm({ ...form, ars: e.target.value })}
-                  />
-                </Field>
-              </div>
-              <Note>
-                Podés especificar el precio en una o ambas monedas. Si no especificás precio, se mostrará “A consultar”.
-              </Note>
-            </section>
-          )}
-
-          {tab === 'images' && (
-            <section className="space-y-6">
-              <h2 className="text-xl font-semibold">Imágenes de la Propiedad</h2>
-              <div
-                className="border-2 border-dashed border-gray-300 rounded-2xl p-8 min-h-40 flex flex-col items-center justify-center text-gray-600 hover:bg-gray-50 cursor-pointer"
-                onClick={onPickImages}
+      {tab === 'images' && (
+        <section className="card">
+          <div className="flex items-center justify-between mb-3">
+            <div className="font-semibold">Imágenes de la Propiedad</div>
+            <div className="flex gap-2">
+              <button type="button" className="btn btn-ghost" onClick={onPickImages}>
+                <ImagePlus className="w-4 h-4 mr-2" /> Agregar
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={uploading || !localFiles.length}
+                onClick={() => uploadImages(localFiles)}
+                title={!localFiles.length ? 'Seleccioná imágenes primero' : 'Subir imágenes a Drive'}
               >
-                <ImagePlus className="w-8 h-8 mb-2" />
-                <div>
-                  <strong>Click para subir</strong> imágenes
-                </div>
-                <div className="text-xs text-gray-500 mt-1">PNG, JPG hasta 10MB cada una</div>
-                <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={onFiles} />
+                <UploadCloud className="w-4 h-4 mr-2" />
+                {uploading ? 'Subiendo...' : 'Subir imágenes'}
+              </button>
+            </div>
+          </div>
+
+          {/* selector oculto */}
+          <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onFiles} />
+
+          {/* previews de imágenes nuevas (locales) */}
+          {localFiles.length > 0 && (
+            <>
+              <h4 className="text-sm font-medium mb-2">Para subir</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-4">
+                {localFiles.map((f, i) => (
+                  <div key={`${f.name}-${i}`} className="relative rounded-lg overflow-hidden border">
+                    <img src={URL.createObjectURL(f)} alt={f.name} className="w-full h-28 object-cover" />
+                    <button
+                      type="button"
+                      className="absolute top-1 right-1 bg-white/90 rounded-full p-1 shadow"
+                      onClick={() => setLocalFiles(prev => prev.filter((_, idx) => idx !== i))}
+                      title="Quitar"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
               </div>
-
-              {form.imagenes.length > 0 && (
-                <div className="grid md:grid-cols-4 gap-3">
-                  {form.imagenes.map((f, i) => (
-                    <div key={i} className="border rounded-xl p-3 text-sm bg-white">
-                      <div className="truncate">{f.name}</div>
-                      <div className="text-gray-500">{(f.size / 1024 / 1024).toFixed(2)} MB</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
+            </>
           )}
-        </div>
 
-        {/* acciones */}
-        <div className="mt-4 flex items-center justify-end gap-3">
-          <a href="/propiedades" className="btn btn-ghost">
-            Cancelar
-          </a>
-          <button
-            className="btn btn-primary disabled:opacity-60"
-            onClick={handleCreate}
-            disabled={creating}
-          >
-            {creating ? 'Creando…' : (<><Check className="w-4 h-4" /> Crear Propiedad</>)}
-          </button>
+          {/* imágenes ya subidas (IDs) */}
+          <h4 className="text-sm font-medium mb-2">Subidas</h4>
+          {imageIds.length ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {imageIds.map((id, i) => (
+                <div key={`${id}-${i}`} className="relative rounded-lg overflow-hidden border">
+                  <img
+                    src={toImageUrl(id)}
+                    alt={`img-${i}`}
+                    className="w-full h-28 object-cover"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/img/placeholder-property.jpg' }}
+                  />
+                  <button
+                    type="button"
+                    className="absolute top-1 right-1 bg-white/90 rounded-full p-1 shadow"
+                    onClick={() => setImageIds(prev => prev.filter((_, idx) => idx !== i))}
+                    title="Quitar"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-sm text-gray-500">Aún no hay imágenes subidas.</div>
+          )}
+
+          <p className="text-xs text-gray-500 mt-4 flex items-start gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            Las imágenes se almacenan de forma privada en Google Drive (carpeta configurada en <code>DRIVE_FOLDER_ID</code>). En la hoja se guardan sólo los <em>IDs</em>.
+          </p>
+        </section>
+      )}
+
+      {/* Mensajes */}
+      {msg && (
+        <div className={`mt-4 card ${msg.type==='ok' ? 'border-emerald-200' : 'border-red-200'}`}>
+          <div className={`${msg.type==='ok' ? 'text-emerald-700' : 'text-red-700'}`}>{msg.text}</div>
         </div>
+      )}
+
+      {/* acciones */}
+      <div className="mt-6 flex justify-end gap-3">
+        <button className="btn btn-ghost" type="button" onClick={()=>window.history.back()}>Cancelar</button>
+        <button className="btn btn-primary" disabled={creating} onClick={handleCreate}>
+          {creating ? 'Creando...' : 'Crear Propiedad'}
+        </button>
       </div>
     </div>
   )
 }
 
-/* ---------- auxiliares ---------- */
+/* -------- componentes auxiliares -------- */
 
-function Field({
-  icon,
-  label,
-  children,
-}: {
-  icon?: React.ReactNode
-  label: string
-  children: React.ReactNode
-}) {
+function TabBtn({ active, onClick, children }: { active: boolean, onClick: ()=>void, children: React.ReactNode }) {
   return (
-    <div>
-      <label className="block text-sm font-medium mb-1">{label}</label>
-      <div className="relative">
-        {icon && <span className="absolute left-3 top-1/2 -translate-y-1/2">{icon}</span>}
-        <div className={icon ? 'pl-8' : ''}>{children}</div>
-      </div>
-    </div>
-  )
-}
-
-function Feature({
-  icon,
-  label,
-  checked,
-  onChange,
-}: {
-  icon: React.ReactNode
-  label: string
-  checked: boolean
-  onChange: (v: boolean) => void
-}) {
-  return (
-    <label
-      className={`flex items-center gap-3 border rounded-xl px-4 py-3 bg-white cursor-pointer
-      ${checked ? 'border-brand-500 ring-2 ring-brand-500/40' : 'border-gray-200 hover:border-gray-300'}`}
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-3 py-2 rounded-md text-sm ${
+        active ? 'bg-brand-50 text-brand-700 border border-brand-200' : 'bg-white border hover:bg-gray-50'
+      }`}
     >
-      <input
-        type="checkbox"
-        className="accent-brand-600"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-      />
-      <span className="inline-flex items-center gap-2">
-        <span className="text-brand-700">{icon}</span>
-        <span>{label}</span>
-      </span>
-    </label>
+      {children}
+    </button>
   )
 }
 
-function Note({ children }: { children: React.ReactNode }) {
+function Check({ label, value, onChange }: { label: string, value: boolean, onChange: (v:boolean)=>void }) {
+  const id = `chk-${label.replace(/\s+/g,'-').toLowerCase()}`
   return (
-    <div className="bg-blue-50 text-blue-800 text-sm border border-blue-100 rounded-xl px-4 py-3">
-      <strong className="mr-1">Nota:</strong> {children}
-    </div>
+    <label htmlFor={id} className="flex items-center gap-2">
+      <input id={id} type="checkbox" checked={value} onChange={e=>onChange(e.target.checked)} />
+      <span>{label}</span>
+    </label>
   )
 }
