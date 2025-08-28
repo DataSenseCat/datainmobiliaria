@@ -50,7 +50,7 @@ export default function Layout(){
             <Active to="/propiedades">Propiedades</Active>
             <Active to="/emprendimientos">Emprendimientos</Active>
             <Active to="/tasaciones">Tasaciones</Active>
-            <Active to="/empresa">La Empresa</Active>
+            <Active to="/empresa"><span className="whitespace-nowrap">La Empresa</span></Active>
             <Active to="/contacto">Contacto</Active>
           </nav>
 
@@ -82,7 +82,7 @@ export default function Layout(){
               <li><Link to="/propiedades" className="hover:underline">Propiedades</Link></li>
               <li><Link to="/emprendimientos" className="hover:underline">Emprendimientos</Link></li>
               <li><Link to="/tasaciones" className="hover:underline">Tasaciones</Link></li>
-              <li><Link to="/empresa" className="whitespace-nowrap">La Empresa</Link></li>
+              <li><Link to="/empresa" className="hover:underline">La Empresa</Link></li>
               <li><Link to="/contacto" className="hover:underline">Contacto</Link></li>
             </ul>
           </div>
