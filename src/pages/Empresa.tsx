@@ -218,5 +218,14 @@ function Cert({ label }:{label:string}) {
     </div>
   )
 }
+import { useEffect } from 'react';
+
+export default function Empresa() {
+  useEffect(() => {
+    console.log('EMPRESA >> este archivo se está renderizando');
+  }, []);
+  // ...
+}
+
 
 
