@@ -2,23 +2,22 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
-import Layout from './shared/Layout'
+import './styles/index.css'
 
-// Páginas existentes (ajusta paths si en tu proyecto tienen otros nombres)
+import Layout from './shared/Layout'
 import Home from './pages/Home'
 import Contacto from './pages/Contacto'
 import TasacionesPage from './pages/TasacionesPage'
 import EmpresaPage from './pages/EmpresaPage'
 import Detail from './pages/Detail'
 
-// Páginas nuevas
+// nuevas/ajustadas
+import Propiedades from './pages/Propiedades'
 import Login from './pages/Login'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminList from './pages/AdminList'
-import Admin from './pages/Admin'          // tu creador de propiedades con subida privada (ya lo tenemos)
+import Admin from './pages/Admin'
 import AdminEdit from './pages/AdminEdit'
-
-import './styles/index.css'
 
 const router = createBrowserRouter([
   {
@@ -26,21 +25,21 @@ const router = createBrowserRouter([
     element: <Layout />,
     children: [
       { index: true, element: <Home /> },
-      { path: 'contacto', element: <Contacto /> },
+      { path: 'propiedades', element: <Propiedades /> },
+      { path: 'propiedad/:id', element: <Detail /> },
+      { path: 'emprendimientos', element: <div className="container py-10">Próximamente</div> },
       { path: 'tasaciones', element: <TasacionesPage /> },
       { path: 'empresa', element: <EmpresaPage /> },
-      { path: 'propiedad/:id', element: <Detail /> },
+      { path: 'contacto', element: <Contacto /> },
 
-      // Auth
+      // auth/admin
       { path: 'login', element: <Login /> },
-
-      // Admin
       { path: 'admin', element: <AdminDashboard /> },
       { path: 'admin/propiedades', element: <AdminList /> },
       { path: 'admin/nueva', element: <Admin /> },
       { path: 'admin/editar/:id', element: <AdminEdit /> },
-    ],
-  },
+    ]
+  }
 ])
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
