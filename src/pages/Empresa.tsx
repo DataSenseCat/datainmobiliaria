@@ -1,16 +1,16 @@
+// src/pages/Empresa.tsx
 import {
   Trophy, ShieldCheck, Sparkles, Building2, Home, Users2, Hammer, Scale, CheckCircle2,
-  Quote, Star
+  Quote, Star, BriefcaseBusiness, ClipboardList
 } from 'lucide-react'
 import { SITE } from '../shared/SiteConfig'
 
 export default function Empresa() {
   return (
     <div className="w-full">
-      {/* ===== HERO AZUL CENTRADO (igual que inmobiliaria1) ===== */}
+      {/* HERO azul centrado */}
       <section className="bg-brand-600 text-white">
         <div className="container py-12 text-center">
-          {/* pill superior */}
           <div className="inline-flex items-center gap-2 text-xs md:text-sm bg-white/15 rounded-full px-3 py-1 mb-3">
             <span className="bg-white text-brand-600 px-2 py-0.5 rounded-full font-semibold">Desde 2008</span>
             <span className="opacity-90">más de 15 años de experiencia</span>
@@ -22,14 +22,12 @@ export default function Empresa() {
             con su próximo hogar o inversión.
           </p>
 
-          {/* badges dentro del hero */}
           <div className="mt-6 grid md:grid-cols-3 gap-3 max-w-4xl mx-auto">
             <HeroBadge icon={<Trophy className="w-5 h-5" />} title="2,500+ operaciones" desc="ventas y alquileres concretados" />
             <HeroBadge icon={<ShieldCheck className="w-5 h-5" />} title="98% satisfacción" desc="de nuestros clientes" />
             <HeroBadge icon={<Sparkles className="w-5 h-5" />} title="Equipo profesional" desc="tasadores y agentes certificados" />
           </div>
 
-          {/* botones del hero */}
           <div className="mt-6 flex items-center justify-center gap-3">
             <a href="/contacto" className="btn bg-white text-brand-700 hover:bg-white/90">Contactar Ahora</a>
             <a href={`mailto:${SITE.email}`} className="btn btn-outline border-white text-white hover:bg-white/10">Escribir</a>
@@ -37,7 +35,7 @@ export default function Empresa() {
         </div>
       </section>
 
-      {/* ===== Misión / Visión / Valores (tarjetas “pastilla”) ===== */}
+      {/* Misión / Visión / Valores */}
       <section className="container -mt-6 relative z-10 grid md:grid-cols-3 gap-6">
         <InfoCard title="Nuestra Misión" icon={<Sparkles className="w-5 h-5 text-brand-700" />}>
           Ser el puente que conecta a las personas con sus sueños inmobiliarios, brindando un servicio integral y transparente.
@@ -50,7 +48,7 @@ export default function Empresa() {
         </InfoCard>
       </section>
 
-      {/* ===== Estadísticas ===== */}
+      {/* Stats (4) */}
       <section className="container py-8">
         <div className="grid md:grid-cols-4 gap-4">
           <Stat number="15+" label="Años de experiencia" />
@@ -60,26 +58,30 @@ export default function Empresa() {
         </div>
       </section>
 
-      {/* ===== Nuestros Servicios (grilla igual a inmobiliaria1) ===== */}
+      {/* Servicios (8 pastillas) */}
       <section className="container pb-8">
         <h3 className="text-xl font-semibold mb-4">Nuestros Servicios</h3>
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-4 gap-4">
           <ServiceCard icon={<Home className="w-5 h-5" />} title="Venta de Propiedades"
-            items={['Tasación gratuita', 'Marketing digital', 'Visitas organizadas', 'Tramitación completa']} />
+            items={['Tasación gratuita','Marketing digital','Visitas organizadas','Tramitación completa']} />
           <ServiceCard icon={<Hammer className="w-5 h-5" />} title="Alquiler y Administración"
-            items={['Búsqueda de inquilinos', 'Contratos & cobranzas', 'Garantías', 'Mantenimiento']} />
+            items={['Búsqueda de inquilinos','Contratos & cobranzas','Garantías','Mantenimiento']} />
           <ServiceCard icon={<Scale className="w-5 h-5" />} title="Servicios Legales"
-            items={['Revisión de contratos', 'Regularización', 'Escrituras', 'Asesoría legal']} />
+            items={['Revisión de contratos','Regularización','Escrituras','Asesoría legal']} />
           <ServiceCard icon={<Building2 className="w-5 h-5" />} title="Desarrollos Inmobiliarios"
-            items={['Comercialización', 'Estrategia de precios', 'Lanzamientos', 'Salas de ventas']} />
+            items={['Comercialización','Estrategia de precios','Lanzamientos','Salas de ventas']} />
           <ServiceCard icon={<CheckCircle2 className="w-5 h-5" />} title="Tasaciones"
-            items={['Informe profesional', 'Análisis de mercado', 'Recomendaciones', '100% gratuito']} />
+            items={['Informe profesional','Análisis de mercado','Recomendaciones','100% gratuito']} />
           <ServiceCard icon={<Users2 className="w-5 h-5" />} title="Asesoramiento de Inversión"
-            items={['Zonas en crecimiento', 'Renta proyectada', 'Financiamiento', 'Portafolios']} />
+            items={['Zonas en crecimiento','Renta proyectada','Financiamiento','Portafolios']} />
+          <ServiceCard icon={<BriefcaseBusiness className="w-5 h-5" />} title="Administración de Propiedades"
+            items={['Cobranza','Liquidaciones','Seguimiento de moras','Reportes']} />
+          <ServiceCard icon={<ClipboardList className="w-5 h-5" />} title="Comercialización & Marketing"
+            items={['Fotos & video','Portales & RRSS','Open house','Landing de proyecto']} />
         </div>
       </section>
 
-      {/* ===== Equipo ===== */}
+      {/* Equipo */}
       <section className="container pb-8">
         <h3 className="text-xl font-semibold mb-4">Nuestro Equipo</h3>
         <div className="grid md:grid-cols-4 gap-4">
@@ -90,17 +92,20 @@ export default function Empresa() {
         </div>
       </section>
 
-      {/* ===== Testimonios (burbuja con estrellas) ===== */}
+      {/* Testimonios */}
       <section className="container pb-8">
         <h3 className="text-xl font-semibold mb-4">Lo que dicen nuestros clientes</h3>
         <div className="grid md:grid-cols-3 gap-4">
-          <Testimonial text="Vendieron mi casa en tiempo récord y al precio acordado. Muy profesionales." author="Juan Pérez" role="Barrio Norte" />
-          <Testimonial text="Me ayudaron a encontrar la inversión perfecta. Atención personalizada." author="Laura Martínez" role="Centro" />
-          <Testimonial text="Excelentes, me acompañaron en cada paso de la compra." author="Miguel Sánchez" role="Villa Cubas" />
+          <Testimonial text="Vendieron mi casa en tiempo récord y al precio acordado. Muy profesionales."
+            author="Juan Pérez" role="Barrio Norte" />
+          <Testimonial text="Me ayudaron a encontrar la inversión perfecta. Atención personalizada."
+            author="Laura Martínez" role="Centro" />
+          <Testimonial text="Excelentes, me acompañaron en cada paso de la compra."
+            author="Miguel Sánchez" role="Villa Cubas" />
         </div>
       </section>
 
-      {/* ===== Certificaciones ===== */}
+      {/* Certificaciones */}
       <section className="container pb-12">
         <h3 className="text-xl font-semibold mb-4">Certificaciones y Membresías</h3>
         <div className="grid md:grid-cols-4 gap-4">
@@ -111,7 +116,7 @@ export default function Empresa() {
         </div>
       </section>
 
-      {/* ===== CTA FINAL AZUL (dos botones) ===== */}
+      {/* CTA final (azul) */}
       <section className="bg-brand-700 text-white">
         <div className="container py-10 grid md:grid-cols-2 gap-6 items-center">
           <div>
@@ -128,7 +133,7 @@ export default function Empresa() {
   )
 }
 
-/* ===== componentes con el mismo “feel” que en inmobiliaria1 ===== */
+/* ---------- componentes con el mismo “feel” que en inmobiliaria1 ---------- */
 
 function HeroBadge({ icon, title, desc }:{icon:React.ReactNode,title:string,desc:string}) {
   return (
@@ -213,4 +218,5 @@ function Cert({ label }:{label:string}) {
     </div>
   )
 }
+
 
