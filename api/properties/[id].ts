@@ -21,7 +21,7 @@ function resolveCredsFromEnv() {
     } catch {}
   }
   if (key.includes('\\n')) key = key.replace(/\\n/g, '\n')
-  const sheetId = process.env.SHEET_ID || process.env.GOOGLE_SHEET_ID || ''
+  const sheetId = process.env.GOOGLE_SHEET_ID || process.env.SHEET_ID || ''
   return { email, key, sheetId }
 }
 function sheetsClient(email: string, key: string) {
@@ -38,22 +38,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const sheets = sheetsClient(email, key)
   const id = String(req.query.id || '')
-
   if (!id) return res.status(400).json({ error: 'Missing id' })
 
   try {
-    // Leer todas las filas para ubicar el índice
     const range = 'properties!A1:ZZZ'
     const resp = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range })
     const values = resp.data.values || []
     if (!values.length) return res.status(404).json({ error: 'Sheet vacía' })
+
     const headers = values[0].map((h) => String(h || '').trim())
     const rows = values.slice(1)
     const idx = rows.findIndex(r => String(r[headers.indexOf('id')] || r[headers.indexOf('ID')] || '') === id)
-
     if (idx === -1) return res.status(404).json({ error: 'No encontrado' })
 
-    const rowNumber = idx + 2 // +1 por header, +1 por 1-based
+    const rowNumber = idx + 2
+
     if (req.method === 'GET') {
       const row = rows[idx] || []
       const obj: Record<string, any> = {}
@@ -79,7 +78,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (req.method === 'DELETE') {
-      // Para borrar la fila completa necesitamos el sheetId (gid)
       const doc = await sheets.spreadsheets.get({
         spreadsheetId: sheetId,
         fields: 'sheets(properties(sheetId,title))'
@@ -97,8 +95,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               range: {
                 sheetId: gid,
                 dimension: 'ROWS',
-                startIndex: rowNumber - 1, // 0-based
-                endIndex: rowNumber     // exclusivo
+                startIndex: rowNumber - 1,
+                endIndex: rowNumber
               }
             }
           }]
