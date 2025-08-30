@@ -3,17 +3,59 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { google } from 'googleapis'
 import { del as blobDel } from '@vercel/blob'
 
-function fixKey(k = '') { return k.includes('\\n') ? k.replace(/\\n/g, '\n') : k }
+type UploadItem = {
+  url: string
+  filename: string
+  contentType?: string
+}
 
-function authClients() {
+type Body = {
+  property: {
+    titulo: string
+    ciudad: string
+    tipo: string
+    operacion: string
+    direccion?: string
+    descripcion?: string
+    usd?: number
+    ars?: number
+    ambientes?: number
+    banos?: number
+    m2cubiertos?: number
+    m2totales?: number
+    cochera?: boolean
+    piscina?: boolean
+    dptoServicio?: boolean
+    quincho?: boolean
+    parrillero?: boolean
+    destacada?: boolean
+    activa?: boolean
+  }
+  blobs: UploadItem[]
+}
+
+function fixKey(k: string) {
+  // cuando el PRIVATE KEY viene con \n literales, los restauramos
+  return k.includes('\\n') ? k.replace(/\\n/g, '\n') : k
+}
+
+function assertEnvs() {
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || ''
   const key = fixKey(process.env.GOOGLE_PRIVATE_KEY || '')
-  // 👇 CORRECTO: sin '~~'
+  // Permitimos ambos nombres para evitar desfasajes
   const sheetId = process.env.GOOGLE_SHEET_ID || process.env.SHEET_ID || ''
-  if (!email || !key || !sheetId) throw new Error('Faltan envs de Google (svc account y/o sheet)')
+  if (!email || !key || !sheetId) {
+    throw new Error('Faltan envs de Google (svc account y/o sheet)')
+  }
+  return { email, key, sheetId }
+}
+
+async function authClients() {
+  const { email, key, sheetId } = assertEnvs()
 
   const auth = new google.auth.JWT({
-    email, key,
+    email,
+    key,
     scopes: [
       'https://www.googleapis.com/auth/spreadsheets',
       'https://www.googleapis.com/auth/drive'
@@ -25,117 +67,92 @@ function authClients() {
 }
 
 async function copyBlobToDrive(
-  drive: any,
-  url: string,
-  filename?: string,
-  contentType?: string,
+  drive: ReturnType<typeof google.drive>['files'],
+  item: UploadItem,
   folderId?: string
 ) {
-  const r = await fetch(url)
+  // Descargamos el blob temporal
+  const r = await fetch(item.url)
   if (!r.ok) throw new Error(`No se pudo leer el blob: ${r.status}`)
-  const mime = contentType || r.headers.get('content-type') || 'application/octet-stream'
   const buf = Buffer.from(await r.arrayBuffer())
+  const mime = item.contentType || r.headers.get('content-type') || 'application/octet-stream'
 
-  const meta: any = { name: filename || 'imagen.jpg' }
-  if (folderId) meta.parents = [folderId]
-
-  const created = await drive.files.create({
-    requestBody: meta,
-    media: { mimeType: mime, body: buf },
+  // Subimos a Drive
+  const created = await drive.create({
+    requestBody: {
+      name: item.filename,
+      parents: folderId ? [folderId] : undefined
+    },
+    media: {
+      mimeType: mime,
+      body: buf
+    },
     fields: 'id'
   })
-  return created.data.id as string
-}
 
-function normalizeProperty(body: Record<string, any>) {
-  const b = body || {}
-  const num = (v: any) => Number.isFinite(Number(v)) ? Number(v) : ''
-  const bool = (v: any) => v ? 'true' : ''
-  return {
-    id: b.id || `${Date.now().toString(36)}${Math.random().toString(36).slice(2,8)}`,
-    titulo: b.titulo || b.título || '',
-    ciudad: b.ciudad || '',
-    direccion: b.direccion || b.dirección || '',
-    descripcion: b.descripcion || b.descripción || '',
-    tipo: b.tipo || '',
-    operacion: b.operacion || b.operación || '',
-    destacada: bool(b.destacada),
-    activa: b.activa === false ? '' : 'true',
-    habitaciones: num(b.habitaciones),
-    banos: b.banos ?? b['baños'] ?? '',
-    m2_cubiertos: num(b.m2_cubiertos ?? b.m2cubiertos),
-    m2_totales: num(b.m2_totales ?? b.m2totales),
-    precio_usd: num(b.precio_usd),
-    precio_ars: num(b.precio_ars),
-    cochera: bool(b.cochera),
-    piscina: bool(b.piscina),
-    dpto_servicio: bool(b.dpto_servicio),
-    quincho: bool(b.quincho),
-    parrillero: bool(b.parrillero)
-  }
+  const fileId = created.data.id as string
+  return fileId
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' })
-  try {
-    const payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
-    const property = payload?.property || {}
-    const blobs = Array.isArray(payload?.blobs)
-      ? payload.blobs as Array<{url:string, filename?:string, contentType?:string}>
-      : []
-    if (!blobs.length) return res.status(400).json({ error: 'Faltan blobs' })
+  if (req.method !== 'POST') {
+    return res.status(405).json({ ok: false, error: 'Method Not Allowed' })
+  }
 
-    const { sheets, drive, sheetId } = authClients()
+  try {
+    const { sheets, drive, sheetId } = await authClients()
     const folderId = process.env.DRIVE_FOLDER_ID || undefined
 
+    const body = req.body as Body
+    if (!body || !Array.isArray(body.blobs)) {
+      return res.status(400).json({ ok: false, error: 'Body inválido' })
+    }
+
+    // 1) Copiar blobs -> Drive
     const fileIds: string[] = []
-    for (const b of blobs) {
-      const id = await copyBlobToDrive(drive, b.url, b.filename, b.contentType, folderId)
+    for (const item of body.blobs) {
+      const id = await copyBlobToDrive(drive.files, item, folderId)
       fileIds.push(id)
     }
 
-    // limpiamos los blobs de staging (best-effort)
-    try { await blobDel(blobs.map(b => b.url)) } catch {}
-
-    // cabeceras
-    const head = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'properties!A1:ZZ1' })
-    const headers = (head.data.values?.[0] || []).map(h => String(h || '').trim())
-    const n = normalizeProperty(property)
-    const created_at = new Date().toISOString()
-
-    const cols = headers.length ? headers : [
-      'id','titulo','ciudad','direccion','descripcion','tipo','operacion',
-      'destacada','activa','habitaciones','banos','m2_cubiertos','m2_totales',
-      'precio_usd','precio_ars','cochera','piscina','dpto_servicio','quincho','parrillero',
-      'imagenes','created_at'
-    ]
-
-    const row = cols.map((c) => {
-      if (c === 'imagenes') return JSON.stringify(fileIds)
-      if (c === 'created_at') return created_at
-      const v = (n as any)[c]
-      return v === undefined || v === null ? '' : String(v)
-    })
-
-    if (!headers.length) {
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: sheetId,
-        range: 'properties!A1',
-        valueInputOption: 'RAW',
-        requestBody: { values: [cols] }
-      })
-    }
+    // 2) Guardar fila en Google Sheets (pestaña "properties")
+    const p = body.property
+    const values = [[
+      new Date().toISOString(),
+      p.titulo, p.ciudad, p.tipo, p.operacion,
+      p.direccion || '',
+      p.descripcion || '',
+      p.usd ?? '',
+      p.ars ?? '',
+      p.ambientes ?? '',
+      p.banos ?? '',
+      p.m2cubiertos ?? '',
+      p.m2totales ?? '',
+      p.cochera ? 'sí' : 'no',
+      p.piscina ? 'sí' : 'no',
+      p.dptoServicio ? 'sí' : 'no',
+      p.quincho ? 'sí' : 'no',
+      p.parrillero ? 'sí' : 'no',
+      p.destacada ? 'sí' : 'no',
+      p.activa ?? true ? 'sí' : 'no',
+      fileIds.join(',') // guardamos los IDs de Drive
+    ]]
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: sheetId,
       range: 'properties!A1',
-      valueInputOption: 'RAW',
-      insertDataOption: 'INSERT_ROWS',
-      requestBody: { values: [row] }
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values }
     })
 
+    // 3) Borrar blobs temporales de Vercel
+    for (const item of body.blobs) {
+      // la API de delete de Blob acepta el url
+      await blobDel(item.url)
+    }
+
     return res.status(200).json({ ok: true, fileIds })
-  } catch (e: any) {
-    return res.status(500).json({ error: e?.message || 'Error interno' })
+  } catch (err: any) {
+    return res.status(500).json({ ok: false, error: err?.message || 'Server error' })
   }
 }
